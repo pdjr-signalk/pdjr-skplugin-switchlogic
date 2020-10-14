@@ -1,0 +1,29 @@
+{
+  "name": "signalk-switchlogic",
+  "version": "1.0.0",
+  "description": "Apply binary logic over switch and notification states.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/preeve9534/signalk-switchlogic.git"
+  },
+  "keywords": [
+    "signalk-node-server-plugin",
+    "signalk",
+    "switchlogic",
+    "plugin"
+  ],
+  "author": "Paul Reeve <preeve@pdjr.eu>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/preeve9534/signalk-switchlogic/issues"
+  },
+  "homepage": "https://github.com/preeve9534/signalk-switchlogic#readme",
+  "dependencies": {
+    "sprintf-js": "^1.1.2",
+    "sprintf.js": "^0.1.4"
+  }
+}

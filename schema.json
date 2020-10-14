@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "controlchannel": {
+      "title": "Control channel",
+      "type": "string",
+      "default": "notification:notifications.switchlogic.control"
+    },
+    "rules": {
+      "title": "Rules",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "required": [ "input", "output" ],
+        "properties": {
+          "input": {
+            "title": "Input",
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          "output": {
+            "title": "Output",
+            "type": "string",
+            "default": ""
+          },
+          "description": {
+            "title": "Description",
+            "type": "string",
+            "default": ""
+          }
+        }
+      }
+    }
+  }
+}
