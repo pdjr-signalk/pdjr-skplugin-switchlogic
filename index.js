@@ -1,17 +1,17 @@
-/**
+/**********************************************************************
  * Copyright 2018 Paul Reeve <paul@pdjr.eu>
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You may
+ * obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
  */
 
 const fs = require('fs');
@@ -24,6 +24,7 @@ const ExpressionParser = require("./lib/expression-parser/ExpressionParser.js");
 
 const PLUGIN_SCHEMA_FILE = __dirname + "/schema.json";
 const PLUGIN_UISCHEMA_FILE = __dirname + "/uischema.json";
+const PLUGIN_DEBUG_TOKENS = [ "rules", "actions" ];
 
 module.exports = function(app) {
   var plugin = {};
@@ -35,7 +36,7 @@ module.exports = function(app) {
   plugin.description = "Apply binary logic over switch and notification states.";
 
   const log = new Log(plugin.id, { ncallback: app.setProviderStatus, ecallback: app.setProviderError });
-  const debug = new DebugLog(plugin.id, [ "rules", "actions" ]);
+  const debug = new DebugLog(plugin.id, PLUGIN_DEBUG_TOKENS);
   const notification = new Notification(app, plugin.id);
   const expressionParser = new ExpressionParser({
     "operand": { "arity": 1, "precedence": 0, "parser": function(t) { return(parseTerm(t, true).stream); } },
@@ -55,7 +56,8 @@ module.exports = function(app) {
   }
 
   plugin.start = function(options) {
-    log.N("operating " + options.rules.length + " rule" + ((options.rules.length == 1)?"":"s"));
+    log.N("using control channel %s", options.controlchannel);
+    log.N("processing %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"));
     debug.N("*", "available debug tokens: %s", debug.getKeys().join(", "));
 
     var controlchannel = options.controlchannel.split(':');
@@ -122,12 +124,12 @@ module.exports = function(app) {
     var retval = null, matches, parts, stream;
 
     // Parse <term> into a <retval> structure or throw an exception.
-    if ((term == null) || (term == "") || (term == "OFF") || (term == "FALSE") || (term == "0")) {
+    if ((term == null) || (term == "") || (term == "off") || (term == "false") || (term == "0")) {
       retval = {
         "type": "off",
         "stream": null
       };
-    } else if ((term == "ON") || (term == "TRUE") || (term == "1")) {
+    } else if ((term == "on") || (term == "true") || (term == "1")) {
       retval = {
         "type": "on",
         "stream": null
@@ -196,13 +198,11 @@ module.exports = function(app) {
   function makeDelta(src, pairs = []) {
     pairs = (Array.isArray(pairs))?pairs:[pairs]; 
     return({
-      "updates": [
-        {
-          "source": { "type": "plugin", "src": ((src)?src:"anon"), },
-          "timestamp": (new Date()).toISOString(),
-          "values": pairs.map(p => { return({ "path": p.path, "value": p.value }); }) 
-        }
-      ]
+      "updates": [{
+        "source": { "type": "plugin", "src": ((src)?src:"anon"), },
+        "timestamp": (new Date()).toISOString(),
+        "values": pairs.map(p => { return({ "path": p.path, "value": p.value }); }) 
+      }]
     });
   }
 
