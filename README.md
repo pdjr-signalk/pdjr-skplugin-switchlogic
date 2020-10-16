@@ -9,33 +9,36 @@ Reading the [Alarm, alert and notification handling](http://signalk.org/specific
 section of the Signal K documentation may provide helpful orientation.
 
 __signalk-switchlogic__ allows the user to define a collection of rules
-each of which maps the result of a boolean *expression* onto some
+each of which maps the result of an input boolean expression onto some
 output action.
 
-Input terms are values drawn from Signal K notification or switch bank
-paths and there are three possible output actions each of which is
-moderated by the result of evaluating *expression*.
+Operands in input expressions are values drawn from Signal K notification
+or switch bank paths.
 
-1. Issue or cancel a notification on a path in Signal K's
-   "notifications..." tree.
+There are three possible types of output action.
+
+1. Issue (if expression is true) or cancel a notification on a path in
+   Signal K's "notifications....) tree.
    The notification path is defined in the rule and the definition can
-   specify any or all property values in an issued notification.
+   specify any or all property values in the issued notification.
 
-2. Write the expression result as the state value of a path in Signal
-   K's "electrical.switches...." tree.
+2. Write a 1 (if expression is true) or 0 as the state value of a path
+   in Signal K's "electrical.switches...." tree.
    The switch path is defined in the rule.
 
 3. Write a JSON command specifying a switch bank update to a 
    control channel.
    The control channel type and identity is defined globally in the
-   plugin configuration.
+   plugin configuration and the output command will have properties
+   identifying the switch bank, channel and state (derived as in (2))
+   to which it applies. 
 
 Option (3) is especially useful since applications inside and outside
 of Signal K can listen to the control channel and take appropriate
 action.
 For example,
 [signalk-switchbank](https://github.com/preeve9534/signalk-switchbank)
-accepts commands on control channel and outputs PGN 127502 Switch Bank
+accepts commands on a control channel and outputs PGN 127502 Switch Bank
 Update messages to operate remote relays on the NMEA bus.
 In a similar way, 
 [signalk-devantech](https://github.com/preeve9534/signalk-devantech)
