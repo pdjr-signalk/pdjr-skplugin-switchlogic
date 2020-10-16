@@ -12,37 +12,25 @@ __signalk-switchlogic__ allows the user to define a collection of rules
 each of which maps the result of an input boolean expression onto some
 output action.
 
-Operands in input expressions are values drawn from Signal K notification
-or switch bank paths.
+Operands in input expressions are values drawn from Signal K paths in
+eiter the "notification...." or "electrical.switches...." trees.
+Output actions include writing values into the same Signal K trees or
+issuing a switch bank operating command over a specified control
+channel.
 
-There are three possible types of output action.
-
-1. Issue (if expression is true) or cancel a notification on a path in
-   Signal K's "notifications....) tree.
-   The notification path is defined in the rule and the definition can
-   specify any or all property values in the issued notification.
-
-2. Write a 1 (if expression is true) or 0 as the state value of a path
-   in Signal K's "electrical.switches...." tree.
-   The switch path is defined in the rule.
-
-3. Write a JSON command specifying a switch bank update to a 
-   control channel.
-   The control channel type and identity is defined globally in the
-   plugin configuration and the output command will have properties
-   identifying the switch bank, channel and state (derived as in (2))
-   to which it applies. 
-
-Option (3) is especially useful since applications inside and outside
-of Signal K can listen to the control channel and take appropriate
-action.
-For example,
+Control channel output is particularly useful since applications inside
+and outside of Signal K can listen to the control channel and take
+appropriate action.
+For example, the
 [signalk-switchbank](https://github.com/preeve9534/signalk-switchbank)
-accepts commands on a control channel and outputs PGN 127502 Switch Bank
-Update messages to operate remote relays on the NMEA bus.
-In a similar way, 
+plugin accepts commands on a control channel and outputs PGN 127502
+Switch Bank Update messages to operate remote relays on the NMEA bus.
+In a similar way, the
 [signalk-devantech](https://github.com/preeve9534/signalk-devantech)
-can be used to operate usb and ethernet connected relay modules. 
+plugin can be used to operate usb and ethernet relay modules from the
+manufacturer Devantech. 
+
+
 
 ## System requirements
 
@@ -64,11 +52,8 @@ before use.
 
 The plugin can be configured using the Signal K Node server plugin
 configuration GUI or by directly editing the plugin's JSON
-configuration file.
- 
-The plugin looks for the configuration file 'switchlogic.json' in the
-server's 'plugin-config-data/' directory.
-This file must have the following general structure:
+configuration file ```switchlogic.json``` which must have the following
+general structure:
 ```
 {
   "enabled": false,
@@ -104,175 +89,153 @@ module at the helm connected to a two-channel relay output module in
 the engine room and that the relay module controls power to two
 immersion heaters.
 
-#### Defining rules
-
-Rule definitions can be arbitrarily complex, but our proposed
-application demands just a simple __rules__ list.
+The __rules__ property introduces an array which contains an arbitrary
+number of rule definitions.
+Each rule definition defines three properties.
 ```
-    "rules": [
-      {
-        "input": "[0,0]",
-        "output": "[12,0]",
-        "description": "Immersion heater 1kW"
-      },
-      {
-        "input": "[0,1]",
-        "output": "[12,1]",
-        "description": "Immersion heater 2kW"
-      }
-    ]
+    {
+      "input": "[0,0]",
+      "output": "[12,0]",
+      "description": "Immersion heater 1kW"
+    }
 ```
 
-Each rule defines the mapping of an input state onto an output path.
-In this case, our inputs are simply switch input module channels and
-our outputs are the relay output module channels that should be
-operated.
-The mapping is straightforward: make the output state reflect the input
-state.
+The __input__ property introduces a string value containing a boolean
+expression that evaluates to 1 (ON) or 0 (OFF).
+In the example given above, the expression "[0,0]" is used as shorthand
+for the Signal K path "electrical.switches.bank.0.0.state" whose stream
+values will become the result of the expression.
+There is a full explanation of input expression syntax below.
 
-__input__ property values supply an expression that evaluates to 1 (ON)
-or 0 (OFF) and in this example we use "[*b*,*c*]" as shorthand for
-switchbank *b*, channel *c*.
-
-__output__ defines the channel that should have its state set to match
-the computed input state (in this case, we use the same notation to
-specify the associated relay output channel).
-
-__description__ property values supply some human-readable text that
-will be used to identify the rule in status and debug outputs.
-
-#### That's it
-
-Our example system is now configured.
-All that remains is for us to enable the plugin by changing the
-__enabled__ property value to 'true'.
-When we restart the server the plugin will execute.
-
-Of course, you will want to create a configuration that suits your
-needs and that might be helped by learning some more about rule
-definitions.
-
-### More about rules
-
-The rule __input__ property value must be a string containing a boolean
-expression.
-The simplest expression, as we saw in the above example, will consist
-of just a single _operand_, but expressions can be arbitrarily complex.
-
-The ground rules are:
-
-1. an operand must be either a reference to a Signal K key from which
-   operand values can be drawn or a boolean constant (either "true" or
-   "false");
-
-2. the available operators are "and", "or" and "not";
-
-3. expressions can be disambiguated or clarified by the use of
-   parentheses.
-
-An example __input__ property value is "[10,3] and (not [10,4])".
-
-The rule __output__ property value is always a single key reference to
-either a switchbank channel or a notification key.
-
-#### Key references and boolean constants
-
-The possible forms of key reference are:
-
-| Form | Syntax                                                       | As operand | As output | Refers to the value of key          |
-|:----:|:-------------------------------------------------------------|:----------:|:---------:|:------------------------------------|
-| 1    | __[__*b*__,__*c*__]__                                        | Yes        | Yes       | Control channel command for *b*.*c* |
-| 3    | __[[__*b*__,__*c*__]]__                                      | Yes        | Yes       | electrical.switches.bank.*b*.*c*    |
-| 4    | *key*[__:__*state*]                                          | Yes        | Yes       | *key*                               |
-| 5    | *key*[__:__[*state*][__:__[*method*][__:__[*description*]]]] | Yes        | Yes       | *key*                               |
-
-And the two boolean constants are:
-
-| Form | Syntax                                                       | As operand | As output | Resolves to                      |
-|:----:|:-------------------------------------------------------------|:----------:|:---------:|:---------------------------------|
-| 6    | { __true__ \| __on__ \| 1 }                                  | Yes        | No        | 1                                |
-| 7    | { __false__ \| __off__ \| 0 }                                | Yes        | No        | 0                                |
-
-Form 1, when used as an output reference, will result in the plugin
-transmitting an NMEA 2000 PGN127502 Switch Bank Update message whenever
-the state of the associated __input__ expression changes.
-Note that the plugin will not directly set the value of the referenced
-key - this will only be updated when the target switchbank device
-responds to the PGN127502 by transmitting a PGN127501 Switch Bank
-Status message that is picked up by Signal K.
-
-Form 2, when used as an output reference, will set the specified Signal K
-key whenever the state of the associated __input__ expression changes.
-If the specified key is associated with a physical input to Signal K,
-then both Signal K and the plugin will be updating the referenced key
-and things are likely to be chaotic.
-
-Form 3 is the switchbank version of Form 2: when used as an output
-reference it will set the specified Signal K key whenever the state of
-the associated __input__ expression changes.
-If the specified key is associated with a physical input to Signal K,
-then both Signal K and the plugin will be updating the referenced key
-and things are likely to be chaotic.
-
-Form 4, in the absence of the optional *state* value, will interpret the
-presence of *key* as 1 and its absense as 0.
-If *state* is specified then additionally the state property of a
-present *key* must equal *state* for a 1 to be resolved.
-
-Form 5 results in the issuing or deletion of the referenced
-notification key when the state of the associated __input__ expression
-resolves respectively to 1 or 0.
-The *state*, *method* and *description* values may be used to set the
-corresponding properties of issued notifications. 
-I these options are not specified then they will default to "alert",
-[] and "Inserted by signalk-switchbank".
-
-Forms 6 and 7 simply generate boolean constants.
-
-#### Some further example rules
-
-Example 1.
-I use this rule to operate the courtesy lights on my side-deck.
-To do this I rely on a separate plugin which raises a notification
-when it is "daylight" in whateiver happens to be my current timezone.
-The rule looks for the absence of this notification or the presence
-of a switch override on switchbank 0, channel 7 and if either is
-present it operates the relay on switchbank 1, channel 4 to which the
-courtesy lights are connected.
+The __output__ property specifies what should be done with the values
+returned by the __input__ expression.
+The shorthand used in the example above says to write a command of the
+form:
 ```
 {
-  "id": "COURTESY LIGHTS",
-  "input": "(not notifications.daylight) or [0,7]",
-  "output": "[1,4]"
+  "moduleid": "12",
+  "channelid": "0",
+  "state": "*result of input expression*"
 }
 ```
 
-Example 2.
+to the channel specified by the __controlchannel__ property.
+The full range of options for the __output__ property are discussed
+below.
+
+The __description__ property value supplies some text that will be
+used to identify the rule in status and debug outputs.
+
+## Input property expression syntax
+
+The simplest expression, as we saw in the above example, will consist
+of just a single _operand_, but expressions can be arbitrarily complex.
+These are the ground rules.
+
+1. An operand must be either:
+
+1.1 A reference to a Signal K notification path of the form:
+
+        *path[__:__*state*]
+
+    If *state* is not specified then the operand will be true if a
+    notification exists on *path*, otherwise false.
+    If *state* is specified, then the operand will be true if a
+    notification exists on *path* and its state property value is
+    equal to *state*, otherwise false.
+
+1.2 A reference to a Signal K switch path of the form:
+
+    __[__[*b*__,__]*c*__]__
+
+    If *b* is present, then the reference expands to the path
+    "electrical.switches.bank.*b*.*c*.state".
+
+    If *b* is absent, then the reference expands to the path
+    "electrical.switches.*c*.state"
+
+    In both cases the operand simply assumes the value of the expanded
+    path (i.e. either 0 or 1).
+
+2. The available operators are "and", "or" and "not";
+
+3. Expressions can be disambiguated or clarified by the use of
+   parentheses.
+
+Examples of valid expressions are "[10,3]", "(not [10,4])" and
+"[10,3] and notifications.tanks.wasteWater.0.level:alert".
+
+## Output property values
+
+The syntax of the output property value specifies one of three possible
+types of output action.
+
+1. Notification output is specified by a string of the form:
+
+   *path*[__:__[*state*][__:__[*method*][__:__[*description*]]]]
+
+   Where *path* is a notification path, and *state*, *method* and
+   *description* optionally set the corresponding properties of any
+   issued notification. 
+   If these options are not specified then they will default to
+   "alert", [] and "Inserted by signalk-switchbank".
+
+   A notification will be issued when the input expression resolves
+   to 1 and cancelled when it resolves to 0.
+
+2. Switch path output is specified by a string of the form:
+
+   __[[__[*b*__,__]*c*__]]__
+
+   which is expanded to a switch path as described for 1.2.
+
+   The resolved value of the input expression will be written directly
+   to the specified path.
+   Note that if the specified path is associated with a physical input
+   to Signal K, then both Signal K and the plugin will be updating the
+   path value and things are likely to be chaotic.
+
+3. Command output to the configured control channel is specified by a
+   string of the form:
+
+   __[__*b*__,__*c*__]__
+
+   See the earlier discussion for more detail.
+
+## A real example
+
 I use this rule to manage my waste pump-out.
-To do this I rely on a separate plugin which issues notifications based
-upon tank level with an 'alert' notification corresponding to 80% full.
-My helm switch has two positions: an "auto" (switch [0,5]) position
-which makes the pumput happen when the tank has got full and "on"
-(switch [0,6]) position which runs the pump directly.
 ```
 {
   "description": "Discharge pump",
   "input": "([0,5] and notifications.tanks.wasteWater.0.currentLevel:alert) or [0,6]" ]
-  "output": "(10,4)"
+  "output": "[10,4]"
 }
 ```
 
-## Debugging and logging
+Switch channel [0,5] and [0,6] refer to switch input channels on an
+NMEA 2000 switch input module mounted below the helm panel.
+This in turn takes connections from the "AUTO" and "MANUAL"
+terminals on my two-position pump out switch.
 
-__signalk-switchbank__ uses the standard Signal K logging mechanism
-based around the idea of debug keys (you can access the relevant GUI
-from your server console menu Server -> Server Log).
+Data from an NMEA 2000 tank level sensor is processed by the
+[signalk-threshold-notifier](https://github.com/preeve9534/signalk-threshold-notifier#readme)
+plugin into alert notifications, one of which become another operand
+of the input expression.
+
+Output from the rule is written to a notification control channel as a
+switch bank operating command which is picked up by the
+[signalk-switchbank](https://github.com/preeve9534/signalk-switchbank#readme)
+plugin and transmitted as an NMEA 2000 PGN 127502 messages to operate
+the waste pump connected to relay number 4 on an NMEA 2000 relay output
+module down in the bilge.
+
+## Debugging and logging
 
 The plugin understands the following debug keys.
 
 | Key | Meaning                                                                                                                    |
 |:-------------------|:------------------------------------------------------------------------------------------------------------|
 | switchbank:\*      | Enable all keys.                                                                                            |
-| switchbank:actions | Log each PGN 127502 Switch Bank Update message transmitted by the plugin.                                   |
+| switchbank:actions | Log each output action taken by the plugin.                                   |
 | switchbank:rules   | Log each rule loaded by the plugin and indicate whether it was successfully parsed or not.                  |
-| switchbank:updates | Log each time a PGN127501 Switch Bank Status message is used to update the plugin's switchbank state model. | 
