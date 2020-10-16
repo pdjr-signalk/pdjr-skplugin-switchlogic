@@ -85,11 +85,11 @@ command output.
 The supplied value must have the format "*channel-type*__:__*channel-id*",
 with the following constraints.
 
-| *channel-type*   | *channel-id*                                                      |
-|:-----------------|:------------------------------------------------------------------|
-| __notification__ | The notification path to which commands should be written.        |
-| __fifo__         | The pathname of a named pipe to which commands should be written. |
-| __dbus__         | The D-Bus bus name to which commands should be written.           |
+| *channel-type*   | *channel-id*                                                          |
+|:-----------------|:----------------------------------------------------------------------|
+| __notification__ | The Signal K notification path to which commands should be written.   |
+| __ipc__          | The OS pathname of an IPS socket to which commands should be written. |
+| __dbus__         | The D-Bus bus name to which commands should be written.               |
 
 The __rules__ array is used to define the rules the plugin must obey
 in order to map changes in switch or notification path values into

@@ -148,7 +148,7 @@ module.exports = function(app) {
         "method": method,
         "description": description
       };
-    } else if ((matches = term.match(/\[(.+),(\d+)\]/)) !== null) {
+    } else if ((matches = term.match(/^\[(.+),(.+)\]$/)) !== null) {
       retval = {
         "type": "switchbank",
         "stream": null,
