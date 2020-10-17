@@ -35,7 +35,7 @@ module.exports = function(app) {
   plugin.name = "Switch logic";
   plugin.description = "Apply binary logic over switch and notification states.";
 
-  const log = new Log(plugin.id, { ncallback: app.setProviderStatus, ecallback: app.setProviderError });
+  const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   const debug = new DebugLog(plugin.id, PLUGIN_DEBUG_TOKENS);
   const notification = new Notification(app, plugin.id);
   const expressionParser = new ExpressionParser({

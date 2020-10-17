@@ -8,7 +8,7 @@ This project implements a plugin for the
 Reading the [Alarm, alert and notification handling](http://signalk.org/specification/1.0.0/doc/notifications.html)
 section of the Signal K documentation may provide helpful orientation.
 
-__signalk-switchlogic__ allows the user to define a collection of rules
+__signalk-switchlogic__ processes a collection of user-defined rules
 each of which maps the result of an input boolean expression onto some
 output action.
 
@@ -19,18 +19,16 @@ issuing a switch bank operating command over a specified control
 channel.
 
 Control channel output is particularly useful since applications inside
-and outside of Signal K can listen to the control channel and take
-appropriate action.
+and outside of Signal K can listen to the control channel for relevant
+commands and take appropriate action.
 For example, the
 [signalk-switchbank](https://github.com/preeve9534/signalk-switchbank)
-plugin accepts commands on a control channel and outputs PGN 127502
+plugin accepts commands on a control channel and issues PGN 127502
 Switch Bank Update messages to operate remote relays on the NMEA bus.
 In a similar way, the
 [signalk-devantech](https://github.com/preeve9534/signalk-devantech)
 plugin can be used to operate usb and ethernet relay modules from the
 manufacturer Devantech. 
-
-
 
 ## System requirements
 
@@ -50,10 +48,11 @@ and installed using
 __signalk-switchlogic__ operates autonomously, but must be configured
 before use.
 
-The plugin can be configured using the Signal K Node server plugin
-configuration GUI or by directly editing the plugin's JSON
-configuration file ```switchlogic.json``` which must have the following
-general structure:
+The plugin configuration is stored in the file ```switchlogic.json```
+and can be maintained using the Signal K plugin configuration GUI or by
+directly editing the file using a text editor.
+
+The general structure of the configuration file is illustrated below.
 ```
 {
   "enabled": false,
@@ -71,16 +70,19 @@ The __controlchannel__ property value introduces a string which
 specifies the control channel to which the plugin will write any
 command output.
 The supplied value must have the format "*channel-type*__:__*channel-id*",
-with the following constraints.
+where *channel-type* identifies the protocol to be used for
+transferring commands and *channel-id* specifies the channel.
+Possible values for *channel-type* and the required content for
+*channel-id* are shown below.
 
-| *channel-type*   | *channel-id*                                                          |
-|:-----------------|:----------------------------------------------------------------------|
-| __notification__ | The Signal K notification path to which commands should be written.   |
-| __ipc__          | The OS pathname of an IPS socket to which commands should be written. |
-| __dbus__         | The D-Bus bus name to which commands should be written.               |
+| *channel-type*   | *channel-id*                             |
+|:-----------------|:-----------------------------------------|
+| __notification__ | A Signal K notification path.            |
+| __ipc__          | An OS pathname specifying an IPC socket. |
+| __dbus__         | The name of a D-Bus channel.             |
 
-The __rules__ array is used to define the rules the plugin must obey
-in order to map changes in switch or notification path values into
+The __rules__ array is used to define the rules that the plugin must
+obey in order to map changes in switch or notification path values into
 operating commands or path value changes.
 
 It is easiest to illustrate the detail of the configuration file format
