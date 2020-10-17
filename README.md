@@ -13,7 +13,7 @@ each of which maps the result of an input boolean expression onto some
 output action.
 
 Operands in input expressions are values drawn from Signal K paths in
-eiter the "notification...." or "electrical.switches...." trees.
+either the "notification...." or "electrical.switches...." trees.
 Output actions include writing values into the same Signal K trees or
 issuing a switch bank operating command over a specified control
 channel.
@@ -22,11 +22,11 @@ Control channel output is particularly useful since applications inside
 and outside of Signal K can listen to the control channel for relevant
 commands and take appropriate action.
 For example, the
-[signalk-switchbank](https://github.com/preeve9534/signalk-switchbank)
+[signalk-switchbank](https://github.com/preeve9534/signalk-switchbank#readme)
 plugin accepts commands on a control channel and issues PGN 127502
 Switch Bank Update messages to operate remote relays on the NMEA bus.
 In a similar way, the
-[signalk-devantech](https://github.com/preeve9534/signalk-devantech)
+[signalk-devantech](https://github.com/preeve9534/signalk-devantech#readme)
 plugin can be used to operate usb and ethernet relay modules from the
 manufacturer Devantech. 
 
@@ -244,5 +244,5 @@ The plugin understands the following debug keys.
 
 ## Author
 
-Paul Reeve <preeve@pdjr.eu>
+Paul Reeve <preeve@pdjr.eu>\
 October 2020
