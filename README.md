@@ -234,8 +234,13 @@ module down in the bilge.
 
 The plugin understands the following debug keys.
 
-| Key | Meaning                                                                                                                    |
-|:-------------------|:------------------------------------------------------------------------------------------------------------|
-| switchbank:\*      | Enable all keys.                                                                                            |
-| switchbank:actions | Log each output action taken by the plugin.                                   |
-| switchbank:rules   | Log each rule loaded by the plugin and indicate whether it was successfully parsed or not.                  |
+| Key | Meaning                                                                                                   |
+|:-------------------|:-------------------------------------------------------------------------------------------|
+| switchbank:\*      | Enable all keys.                                                                           | 
+| switchbank:actions | Log each output action taken by the plugin.                                                |
+| switchbank:rules   | Log each rule loaded by the plugin and indicate whether it was successfully parsed or not. |
+
+## Author
+
+Paul Reeve <preeve@pdjr.eu>
+October 2020
