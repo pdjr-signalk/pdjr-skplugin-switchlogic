@@ -17,8 +17,7 @@ Operands in input expressions are values drawn from Signal K paths in
 either the "notification...." or "electrical.switches...." trees.
 Output mechanisms include writing values into the same Signal K trees
 or issuing a switch bank operating command over a specified control
-channel so that some proxy-application can implement the required
-update.
+channel so that a proxy-application can implement the required update.
 
 Control channel output is particularly useful since applications inside
 and outside of Signal K can listen to the control channel for relevant
@@ -191,8 +190,8 @@ types of output action.
    to Signal K, then both Signal K and the plugin will be updating the
    path value and things are likely to be chaotic.
 
-3. Command output to the configured control channel is specified by a
-   string of the form:
+3. Command output is always addressed to a switch bank and is specified
+   by a string of the form:
 
    __[__*b*__,__*c*__]__
 
@@ -201,24 +200,19 @@ types of output action.
    The resolved value of the input expression will become the value of
    the command's 'state' property.
 
-### Command output
-
-When command output is selected, __signalk-switchlogic__ generates a
-JSON command of the form:
+   When command output is selected, __signalk-switchlogic__ generates a
+   JSON command of the form:
 ```
-{
-  "moduleid": "12",
-  "channelid": "0",
-  "state": "*result of input expression*"
-}
+   {
+     "moduleid": "*b*",
+     "channelid":  "*c*",
+     "state": "*result of input expression*"
+   }
 ```
 
-where the values of the __moduleid__ and __channelid__ properties are
-derived from the rule's __output__ property value and the value of the
-__state__ property is the result of the rule's __input__ expression.
-The JSON command is converted into a command string using
-JSON.stringify() before being written to the plugin's configured
-control channel.
+   The JSON command is converted into a command string using
+   JSON.stringify() before being written to the plugin's configured
+   control channel.
 
 If the control channel is of type "ipc", then the command string is
 written to the control channel directly. If the control channel is of

@@ -61,6 +61,9 @@ module.exports = function(app) {
     debug.N("*", "available debug tokens: %s", debug.getKeys().join(", "));
 
     var controlchannel = options.controlchannel.split(':');
+    if (controlchannel[0] == "ipc") {
+      log.N("IPC output selected so opening channel");
+    }
 
     unsubscribes = (options.rules || []).reduce((a, rule) => {
       var description = rule.description || "";
@@ -80,8 +83,8 @@ module.exports = function(app) {
                     var deltas = { "path": controlchannel[1], "value": { "description": command, "state": "normal", "method": [] } };
                     app.handleMessage(plugin.id, makeDelta(plugin.id, deltas));
                     break;
-                  case "fifo":
-                  case "dbus":
+                  case "ipc":
+                    break;
                   default:
                     break;
                 }
