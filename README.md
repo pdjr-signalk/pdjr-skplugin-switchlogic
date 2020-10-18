@@ -9,14 +9,16 @@ Reading the [Alarm, alert and notification handling](http://signalk.org/specific
 section of the Signal K documentation may provide helpful orientation.
 
 __signalk-switchlogic__ processes a collection of user-defined rules
-each of which maps the result of an input boolean expression onto some
-output action.
+each of which computes the result of an input boolean expression and
+outputs the result to a Signal K path using a mechanism which is
+defined in each rule.
 
 Operands in input expressions are values drawn from Signal K paths in
 either the "notification...." or "electrical.switches...." trees.
-Output actions include writing values into the same Signal K trees or
-issuing a switch bank operating command over a specified control
-channel.
+Output mechanisms include writing values into the same Signal K trees
+or issuing a switch bank operating command over a specified control
+channel so that some proxy-application can implement the required
+update.
 
 Control channel output is particularly useful since applications inside
 and outside of Signal K can listen to the control channel for relevant
@@ -79,7 +81,6 @@ Possible values for *channel-type* and the required content for
 |:-----------------|:-----------------------------------------|
 | __notification__ | A Signal K notification path.            |
 | __ipc__          | An OS pathname specifying an IPC socket. |
-| __dbus__         | The name of a D-Bus channel.             |
 
 The __rules__ array is used to define the rules that the plugin must
 obey in order to map changes in switch or notification path values into
@@ -109,26 +110,19 @@ for the Signal K path "electrical.switches.bank.0.0.state" whose stream
 values will become the result of the expression.
 There is a full explanation of input expression syntax below.
 
-The __output__ property specifies what should be done with the values
-returned by the __input__ expression.
-The shorthand used in the example above says to write a command of the
-form:
-```
-{
-  "moduleid": "12",
-  "channelid": "0",
-  "state": "*result of input expression*"
-}
-```
-
-to the channel specified by the __controlchannel__ property.
-The full range of options for the __output__ property are discussed
-below.
-
+The __output__ property value specifies both what Signal K path should
+be updated (to the result of the input expression) and the mechanism
+through which that update should occur.
+The shorthand used in the example above says "update the value of the
+switch bank path 'electrical.switches.bank.12.0.state'" and by virtue
+of the single brackets) "do this by writing a command to the channel
+specified by the __controlchannel__ property."
+See below for a more complete discussion.
+ 
 The __description__ property value supplies some text that will be
 used to identify the rule in status and debug outputs.
 
-## Input property expression syntax
+### Input property expression syntax
 
 The simplest expression, as we saw in the above example, will consist
 of just a single _operand_, but expressions can be arbitrarily complex.
@@ -167,7 +161,7 @@ These are the ground rules.
 Examples of valid expressions are "[10,3]", "(not [10,4])" and
 "[10,3] and notifications.tanks.wasteWater.0.level:alert".
 
-## Output property values
+### Output property values
 
 The syntax of the output property value specifies one of three possible
 types of output action.
@@ -202,7 +196,47 @@ types of output action.
 
    __[__*b*__,__*c*__]__
 
-   See the earlier discussion for more detail.
+   where *b* is the value of the command's 'instanceid' property and
+   *c* is the value of the command's channelid property.
+   The resolved value of the input expression will become the value of
+   the command's 'state' property.
+
+### Command output
+
+When command output is selected, __signalk-switchlogic__ generates a
+JSON command of the form:
+```
+{
+  "moduleid": "12",
+  "channelid": "0",
+  "state": "*result of input expression*"
+}
+```
+
+where the values of the __moduleid__ and __channelid__ properties are
+derived from the rule's __output__ property value and the value of the
+__state__ property is the result of the rule's __input__ expression.
+The JSON command is converted into a command string using
+JSON.stringify() before being written to the plugin's configured
+control channel.
+
+If the control channel is of type "ipc", then the command string is
+written to the control channel directly. If the control channel is of
+type "notification", then the command string is wrapped in a Signal K
+notification of the form
+```
+{ "description": *command-string*, "state": "normal", "method": [] }
+```
+and the notification is issued on the specified control channel path.
+
+It is the responsibility of control channel listeners to manage updates
+to the Signal K switch bank path specified in any commands that they
+handle.
+If this isn't done, then the originating rule will never be resolved.
+
+If a rule fails to resolve, then __signalk-switchbank__ will retransmit
+the failed command up to a maximum of five times before reporting an
+error to the system logs.
 
 ## A real example
 
