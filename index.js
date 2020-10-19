@@ -98,6 +98,10 @@ module.exports = function(app) {
                   debug.N("actions", "cancelled notification on %s", output.path);
                 }
                 break;
+              case "switch":
+                var deltas = { "path": "electrical.switches." + ((output.instance === undefined)?"":("bank." + output.instance + ".")) + output.channel + ".state", "value": action };
+                app.handleMessage(plugin.id, makeDelta(plugin.id, deltas));
+                break;
               default:
                 log.E("internal error - bad output type");
                 break;
@@ -159,6 +163,21 @@ module.exports = function(app) {
         "instance": matches[1],
         "channel": matches[2]
       };
+    } else if ((matches = term.match(/^\[\[(.+),(.+)\]\]$/)) !== null) {
+      retval = {
+        "type": "switch",
+        "stream": null,
+        "path": "electrical.switches.bank." + matches[1] + "." + (Number(matches[2]) + 1) + ".state",
+        "instance": matches[1],
+        "channel": matches[2]
+      };
+    } else if ((matches = term.match(/^\[\[(.+)\]\]$/)) !== null) {
+      retval = {
+        "type": "switch",
+        "stream": null,
+        "path": "electrical.switches.bank." + matches[1] + ".state",
+        "channel": matches[1]
+      };
     }
 
     if ((retval) && (openstream)) {
@@ -179,6 +198,9 @@ module.exports = function(app) {
               return((v == null)?0:((v.state == s)?1:0));
             }
           }, retval.state);
+          break;
+        case "switch":
+          retval.stream = app.streambundle.getSelfStream(retval.path);
           break;
         case "switchbank":
           retval.stream = app.streambundle.getSelfStream(retval.path);
