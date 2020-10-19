@@ -57,7 +57,7 @@ module.exports = function(app) {
 
   plugin.start = function(options) {
     log.N("using control channel %s", options.controlchannel);
-    log.N("processing %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"));
+    //log.N("processing %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"));
     debug.N("*", "available debug tokens: %s", debug.getKeys().join(", "));
 
     var controlchannel = options.controlchannel.split(':');

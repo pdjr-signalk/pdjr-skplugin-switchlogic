@@ -9,27 +9,32 @@ Reading the [Alarm, alert and notification handling](http://signalk.org/specific
 section of the Signal K documentation may provide helpful orientation.
 
 __signalk-switchlogic__ processes a collection of user-defined rules
-each of which computes the result of an input boolean expression and
-outputs the result to a Signal K path using a mechanism which is
-defined in each rule.
+each of which consists of an *input expression* and an *output target*.
 
-Operands in input expressions are values drawn from Signal K paths in
-either the "notification...." or "electrical.switches...." trees.
-Output mechanisms include writing values into the same Signal K trees
-or issuing a switch bank operating command over a specified control
-channel so that a proxy-application can implement the required update.
+An *input expression* is a boolean expression whose operands are the
+values of Signal K paths in either the "notification...." or
+"electrical.switches...." trees.
 
-Control channel output is particularly useful since applications inside
-and outside of Signal K can listen to the control channel for relevant
-commands and take appropriate action.
-For example, the
+An *output target* specifies both a Signal K path which should be
+updated with the value of *input expression* and a mechanism through
+which the update should be performed.
+
+The update mechanisms can be either the direct update of a path in the
+Signal K data store or the issuing of a *command* to a proxy application
+which will *inter-alia* will be responsible for updating the path
+specified by *output target*.
+Commands are issued over a *control channel* which can be either a
+Signal K notification path or an IPC socket and hence a proxy
+application can be either another Signal K plugin or an application
+outside of Signal K.
+
+Two plugins which will directly accept *command*s from
+__signalk-switchlogic__ are
 [signalk-switchbank](https://github.com/preeve9534/signalk-switchbank#readme)
-plugin accepts commands on a control channel and issues PGN 127502
-Switch Bank Update messages to operate remote relays on the NMEA bus.
-In a similar way, the
+which translates *command*s into equivalent PGN 127502 Switch Bank Update
+messages and so operates remote NMEA 2000 relay modules and
 [signalk-devantech](https://github.com/preeve9534/signalk-devantech#readme)
-plugin can be used to operate usb and ethernet relay modules from the
-manufacturer Devantech. 
+which similarly operates relay modules connected by USB and ethernet.
 
 ## System requirements
 
@@ -81,19 +86,8 @@ Possible values for *channel-type* and the required content for
 | __notification__ | A Signal K notification path.            |
 | __ipc__          | An OS pathname specifying an IPC socket. |
 
-The __rules__ array is used to define the rules that the plugin must
-obey in order to map changes in switch or notification path values into
-operating commands or path value changes.
-
-It is easiest to illustrate the detail of the configuration file format
-by example, so let's assume that we have a two-channel switch input
-module at the helm connected to a two-channel relay output module in
-the engine room and that the relay module controls power to two
-immersion heaters.
-
 The __rules__ property introduces an array which contains an arbitrary
-number of rule definitions.
-Each rule definition defines three properties.
+number of rule definitions, for example:
 ```
     {
       "input": "[0,0]",
@@ -103,31 +97,35 @@ Each rule definition defines three properties.
 ```
 
 The __input__ property introduces a string value containing a boolean
-expression that evaluates to 1 (ON) or 0 (OFF).
-In the example given above, the expression "[0,0]" is used as shorthand
-for the Signal K path "electrical.switches.bank.0.0.state" whose stream
-values will become the result of the expression.
-There is a full explanation of input expression syntax below.
+*input expression*.
+Operands in *input expression* refer to paths in the Signal K
+"notifications...." and "electrical,switches...." trees and values
+appearing on these paths become the value of the operands.
+In the simple example given above, the expression result will just be
+the values of the operand "[0,0]" which concisely specifies the Signal K
+path "electrical.switches.bank.0.0.state".
+There is a full explanation of *input expression* syntax below.
 
-The __output__ property value specifies both what Signal K path should
-be updated (to the result of the input expression) and the mechanism
-through which that update should occur.
+The __output__ property value specifies both the Signal K path that
+should be updated with the value of *input expression* and also the
+mechanism through which that update should occur.
 The shorthand used in the example above says "update the value of the
-switch bank path 'electrical.switches.bank.12.0.state'" and by virtue
-of the single brackets) "do this by writing a command to the channel
-specified by the __controlchannel__ property."
-See below for a more complete discussion.
+switch bank path 'electrical.switches.bank.12.0.state'" and (by virtue
+of the single brackets) "do this by writing a command to the *control
+channel* specified by the __controlchannel__ property."
+See below for a more complete discussion of valid __output__ property
+values.
  
 The __description__ property value supplies some text that will be
 used to identify the rule in status and debug outputs.
 
-### Input property expression syntax
+### Input expression syntax
 
 The simplest expression, as we saw in the above example, will consist
 of just a single _operand_, but expressions can be arbitrarily complex.
 These are the ground rules.
 
-1. An operand must be either:
+1. An operand must be:
 
 1.1 A reference to a Signal K notification path of the form:
 
@@ -151,6 +149,8 @@ These are the ground rules.
 
     In both cases the operand simply assumes the value of the expanded
     path (i.e. either 0 or 1).
+
+1.3 One of the constant values "true" or "false".
 
 2. The available operators are "and", "or" and "not";
 
