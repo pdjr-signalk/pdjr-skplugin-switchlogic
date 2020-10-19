@@ -19,10 +19,11 @@ An *output target* specifies both a Signal K path which should be
 updated with the value of *input expression* and a mechanism through
 which the update should be performed.
 
-The update mechanisms can be either the direct update of a path in the
-Signal K data store or the issuing of a *command* to a proxy application
-which will *inter-alia* will be responsible for updating the path
-specified by *output target*.
+The update mechanism can be either a Signal K delta update of a path in
+the "notifications..." or "electrical.switches...." trees or the
+issuing of a *command* to a proxy application which will *inter-alia*
+be responsible for updating the path specified by *output target*.
+
 Commands are issued over a *control channel* which can be either a
 Signal K notification path or an IPC socket and hence a proxy
 application can be either another Signal K plugin or an application
@@ -122,7 +123,7 @@ used to identify the rule in status and debug outputs.
 ### Input expression syntax
 
 The simplest expression, as we saw in the above example, will consist
-of just a single _operand_, but expressions can be arbitrarily complex.
+of just a single operand, but expressions can be arbitrarily complex.
 These are the ground rules.
 
 1. An operand must be:
@@ -162,10 +163,9 @@ Examples of valid expressions are "[10,3]", "(not [10,4])" and
 
 ### Output property values
 
-The syntax of the output property value specifies one of three possible
-types of output action.
+There are three possible forms for an __output__ property value. 
 
-1. Notification output is specified by a string of the form:
+1. Output to a notification path is specified by a string of the form:
 
    *path*[__:__[*state*][__:__[*method*][__:__[*description*]]]]
 
@@ -175,10 +175,10 @@ types of output action.
    If these options are not specified then they will default to
    "alert", [] and "Inserted by signalk-switchbank".
 
-   A notification will be issued when the input expression resolves
-   to 1 and cancelled when it resolves to 0.
+   A notification will be issued when the associated *input expression*
+   resolves to 1 and cancelled when it resolves to 0.
 
-2. Switch path output is specified by a string of the form:
+2. Output to a switch path is specified by a string of the form:
 
    __[[__[*b*__,__]*c*__]]__
 
@@ -195,42 +195,38 @@ types of output action.
 
    __[__*b*__,__*c*__]__
 
-   where *b* is the value of the command's 'instanceid' property and
-   *c* is the value of the command's channelid property.
-   The resolved value of the input expression will become the value of
-   the command's 'state' property.
+   which is expanded to a switch path as described for 1.2.
 
    When command output is selected, __signalk-switchlogic__ generates a
-   JSON command of the form:
+   JSON *command* of the form:
 ```
    {
      "moduleid": "*b*",
      "channelid":  "*c*",
-     "state": "*result of input expression*"
+     "state": "*value of input expression*"
    }
 ```
 
-   The JSON command is converted into a command string using
+   The JSON *command* is converted into a *command string* using
    JSON.stringify() before being written to the plugin's configured
    control channel.
 
-If the control channel is of type "ipc", then the command string is
-written to the control channel directly. If the control channel is of
-type "notification", then the command string is wrapped in a Signal K
-notification of the form
+   If the control channel is of type "ipc", then *command string* is
+   written to the control channel directly.
+   If the control channel is of type "notification", then *command
+   string* is wrapped in a Signal K notification of the form
 ```
-{ "description": *command-string*, "state": "normal", "method": [] }
+   { "description": *command-string*, "state": "normal", "method": [] }
 ```
-and the notification is issued on the specified control channel path.
+   and the notification is issued on the specified control channel path.
 
-It is the responsibility of control channel listeners to manage updates
-to the Signal K switch bank path specified in any commands that they
-handle.
-If this isn't done, then the originating rule will never be resolved.
-
-If a rule fails to resolve, then __signalk-switchbank__ will retransmit
-the failed command up to a maximum of five times before reporting an
-error to the system logs.
+   It is the responsibility of control channel listeners to manage
+   updates to the Signal K switch bank path specified in any commands
+   that they handle.
+   If this isn't done, then the originating rule will never be resolved
+   and __signalk-switchbank__ will retransmit the failed command up to
+   a maximum of five times before reporting an error to the system logs
+   and abandoning the transmit attempt.
 
 ## A real example
 
