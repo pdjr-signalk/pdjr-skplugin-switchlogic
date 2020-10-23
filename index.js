@@ -56,7 +56,8 @@ module.exports = function(app) {
   }
 
   plugin.start = function(options) {
-    log.N("using control channel %s", options.controlchannel);
+    app.setPluginStatus("FOOOO");
+    //log.N("using control channel %s", options.controlchannel);
     //log.N("processing %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"));
     debug.N("*", "available debug tokens: %s", debug.getKeys().join(", "));
 
@@ -159,7 +160,7 @@ module.exports = function(app) {
       retval = {
         "type": "switchbank",
         "stream": null,
-        "path": "electrical.switches.bank." + matches[1] + "." + (Number(matches[2]) + 1) + ".state",
+        "path": "electrical.switches.bank." + matches[1] + "." + Number(matches[2]) + ".state",
         "instance": matches[1],
         "channel": matches[2]
       };
@@ -167,7 +168,7 @@ module.exports = function(app) {
       retval = {
         "type": "switch",
         "stream": null,
-        "path": "electrical.switches.bank." + matches[1] + "." + (Number(matches[2]) + 1) + ".state",
+        "path": "electrical.switches.bank." + matches[1] + "." + Number(matches[2]) + ".state",
         "instance": matches[1],
         "channel": matches[2]
       };

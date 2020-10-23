@@ -91,8 +91,8 @@ The __rules__ property introduces an array which contains an arbitrary
 number of rule definitions, for example:
 ```
     {
-      "input": "[0,0]",
-      "output": "[12,0]",
+      "input": "[0,1]",
+      "output": "[12,1]",
       "description": "Immersion heater 1kW"
     }
 ```
@@ -103,15 +103,15 @@ Operands in *input expression* refer to paths in the Signal K
 "notifications...." and "electrical,switches...." trees and values
 appearing on these paths become the value of the operands.
 In the simple example given above, the expression result will just be
-the values of the operand "[0,0]" which concisely specifies the Signal K
-path "electrical.switches.bank.0.0.state".
+the values of the operand "[0,1]" which concisely specifies the Signal K
+path "electrical.switches.bank.0.1.state".
 There is a full explanation of *input expression* syntax below.
 
 The __output__ property value specifies both the Signal K path that
 should be updated with the value of *input expression* and also the
 mechanism through which that update should occur.
 The shorthand used in the example above says "update the value of the
-switch bank path 'electrical.switches.bank.12.0.state'" and (by virtue
+switch bank path 'electrical.switches.bank.12.1.state'" and (by virtue
 of the single brackets) "do this by writing a command to the *control
 channel* specified by the __controlchannel__ property."
 See below for a more complete discussion of valid __output__ property
