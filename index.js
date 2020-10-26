@@ -56,15 +56,8 @@ module.exports = function(app) {
   }
 
   plugin.start = function(options) {
-    app.setPluginStatus("FOOOO");
-    //log.N("using control channel %s", options.controlchannel);
-    //log.N("processing %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"));
+    log.N("operating %d rule%s", options.rules.length, (options.rules.length == 1)?"":"s");
     debug.N("*", "available debug tokens: %s", debug.getKeys().join(", "));
-
-    var controlchannel = options.controlchannel.split(':');
-    if (controlchannel[0] == "ipc") {
-      log.N("IPC output selected so opening channel");
-    }
 
     unsubscribes = (options.rules || []).reduce((a, rule) => {
       var description = rule.description || "";
@@ -76,19 +69,10 @@ module.exports = function(app) {
           if (action != -1) {
             log.N("switching " + description + " " + ((action)?"ON":"OFF"));
             switch (output.type) {
-              case "switchbank":
-                var command = JSON.stringify({ "moduleid": output.instance, "channelid": output.channel, "state": action });
-                debug.N("actions", "issuing comand %s on channel %s", command, options.controlchannel);
-                switch (controlchannel[0]) {
-                  case "notification":
-                    var deltas = { "path": controlchannel[1], "value": { "description": command, "state": "normal", "method": [] } };
-                    app.handleMessage(plugin.id, makeDelta(plugin.id, deltas));
-                    break;
-                  case "ipc":
-                    break;
-                  default:
-                    break;
-                }
+              case "switch":
+                var deltas = { "path": "electrical.switches." + ((output.instance === undefined)?"":("bank." + output.instance + ".")) + output.channel + ".control", "value": { "moduleid": output.instance, "channelid": output.channel, "state": action } };
+                debug.N("actions", "issuing update %o", deltas);
+                app.handleMessage(plugin.id, makeDelta(plugin.id, deltas));
                 break;
               case "notification":
                 if (action) {
@@ -98,10 +82,6 @@ module.exports = function(app) {
                   notification.cancel(output.path);
                   debug.N("actions", "cancelled notification on %s", output.path);
                 }
-                break;
-              case "switch":
-                var deltas = { "path": "electrical.switches." + ((output.instance === undefined)?"":("bank." + output.instance + ".")) + output.channel + ".state", "value": action };
-                app.handleMessage(plugin.id, makeDelta(plugin.id, deltas));
                 break;
               default:
                 log.E("internal error - bad output type");
@@ -158,25 +138,17 @@ module.exports = function(app) {
       };
     } else if ((matches = term.match(/^\[(.+),(.+)\]$/)) !== null) {
       retval = {
-        "type": "switchbank",
+        "type": "switch",
         "stream": null,
-        "path": "electrical.switches.bank." + matches[1] + "." + Number(matches[2]) + ".state",
+        "path": "electrical.switches.bank." + matches[1] + "." + matches[2] + ".state",
         "instance": matches[1],
         "channel": matches[2]
       };
-    } else if ((matches = term.match(/^\[\[(.+),(.+)\]\]$/)) !== null) {
+    } else if ((matches = term.match(/^\[(.+)\]$/)) !== null) {
       retval = {
         "type": "switch",
         "stream": null,
-        "path": "electrical.switches.bank." + matches[1] + "." + Number(matches[2]) + ".state",
-        "instance": matches[1],
-        "channel": matches[2]
-      };
-    } else if ((matches = term.match(/^\[\[(.+)\]\]$/)) !== null) {
-      retval = {
-        "type": "switch",
-        "stream": null,
-        "path": "electrical.switches.bank." + matches[1] + ".state",
+        "path": "electrical.switches." + matches[1] + ".state",
         "channel": matches[1]
       };
     }
@@ -192,18 +164,13 @@ module.exports = function(app) {
         case "notification":
           retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => {
             if (s == null) {
-              console.log(">>>>>>>>>>>>>>>>>>>> %s", ((v == null)?0:1));
               return((v == null)?0:1);
             } else {
-              console.log(">>>>>>>>>>>>>>>>>>>> %s", ((v == null)?0:((v.state == s)?1:0)));
               return((v == null)?0:((v.state == s)?1:0));
             }
           }, retval.state);
           break;
         case "switch":
-          retval.stream = app.streambundle.getSelfStream(retval.path);
-          break;
-        case "switchbank":
           retval.stream = app.streambundle.getSelfStream(retval.path);
           break;
         default:
@@ -230,6 +197,7 @@ module.exports = function(app) {
         "values": pairs.map(p => { return({ "path": p.path, "value": p.value }); }) 
       }]
     });
+    console.log("%o", retval);
   }
 
   return(plugin);

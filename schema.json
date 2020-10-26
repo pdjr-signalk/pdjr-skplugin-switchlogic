@@ -1,11 +1,6 @@
 {
   "type": "object",
   "properties": {
-    "controlchannel": {
-      "title": "Control channel",
-      "type": "string",
-      "default": "notification:notifications.switchlogic.control"
-    },
     "rules": {
       "title": "Rules",
       "type": "array",
