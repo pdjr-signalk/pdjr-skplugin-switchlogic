@@ -70,9 +70,12 @@ module.exports = function(app) {
             log.N("switching " + description + " " + ((action)?"ON":"OFF"));
             switch (output.type) {
               case "switch":
-                var deltas = { "path": "electrical.switches." + ((output.instance === undefined)?"":("bank." + output.instance + ".")) + output.channel + ".control", "value": { "moduleid": output.instance, "channelid": output.channel, "state": action } };
+                var path = "electrical.switches." + ((output.instance === undefined)?"":("bank." + output.instance + ".")) + output.channel;
+                var deltas = { "path": path + ".control", "value": { "moduleid": output.instance, "channelid": output.channel, "state": action } };
                 debug.N("actions", "issuing update %o", deltas);
                 app.handleMessage(plugin.id, makeDelta(plugin.id, deltas));
+                var putdelta = { "context": "vessels.self", "correlationId": "184743-434373-348483", "put": { "path": path, "source": plugin.id, "value": action } };
+                app.handleMessage(plugin.id, putdelta);
                 break;
               case "notification":
                 if (action) {
