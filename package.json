@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/preeve9534/signalk-switchlogic#readme",
   "dependencies": {
+    "baconjs": "^1.0.1",
     "sprintf-js": "^1.1.2",
     "sprintf.js": "^0.1.4"
   }
