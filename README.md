@@ -84,7 +84,7 @@ These are the ground rules.
 
 1.1 A reference to a Signal K notification path of the form:
 
-*path[__:__*state*]
+    *path[__:__*state*]
 
 If *state* is not specified then the operand will be true if a
 notification exists on *path*, otherwise false.
