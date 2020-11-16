@@ -82,9 +82,9 @@ These are the ground rules.
 
 1. An operand must be:
 
-* a reference to a Signal K notification path of the form '*path[__:__*state*]', or
-* a reference to a Signal K switch path of the form '__[__[*b*__,__]*c*__]__', or
-* one of the constant values 'true' or 'false'.
+a) a reference to a Signal K notification path of the form '*path*[__:__*state*]', or
+b) a reference to a Signal K switch path of the form '__[__[*b*__,__]*c*__]__', or
+c) one of the constant values 'true' or 'false'.
 
 If *state* is not specified then the operand will be true if a notification
 exists on *path*, otherwise false.
