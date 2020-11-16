@@ -35,7 +35,6 @@ module.exports = function(app) {
   plugin.description = "Apply binary logic over switch and notification states.";
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
-  const debug = new DebugLog(plugin.id, PLUGIN_DEBUG_TOKENS);
   const notification = new Notification(app, plugin.id);
   const expressionParser = new ExpressionParser({
     "operand": { "arity": 1, "precedence": 0, "parser": function(t) { return(parseTerm(t, true).stream); } },
@@ -56,29 +55,29 @@ module.exports = function(app) {
 
   plugin.start = function(options) {
     log.N("operating %d rule%s", options.rules.length, (options.rules.length == 1)?"":"s");
-    debug.N("*", "available debug tokens: %s", debug.getKeys().join(", "));
 
     unsubscribes = (options.rules || []).reduce((a, rule) => {
       var description = rule.description || "";
       var input = expressionParser.parseExpression(rule.input);
       var output = parseTerm(rule.output, true);
       if ((input !== null) && (output !== null) && (output.stream !== null)) {
-        debug.N("rules", "enabling %o", rule);
+        app.debug("enabling %o", rule);
         a.push(bacon.combineWith(function(iv,ov) { return((iv == ov)?-1:((iv > ov)?1:0)); }, [ input, output.stream ]).onValue(action => {
           if (action != -1) {
             log.N("switching " + description + " " + ((action)?"ON":"OFF"));
             switch (output.type) {
               case "switch":
                 var path = "electrical.switches." + ((output.instance === undefined)?"":("bank." + output.instance + ".")) + output.channel;
-                app.putSelfPath(path + ".state", action, (d) => debug.N("put", d.message));
+                app.debug("issuing put request (%s <= %s)", path, action);
+                app.putSelfPath(path + ".state", action, (d) => app.debug("put response: %s", d.message));
                 break;
               case "notification":
                 if (action) {
+                  app.debug("issuing notification (%s:%s)", output.path, output.state);
                   notification.issue(output.path, output.description, output.state, output.method);
-                  debug.N("actions", "issued %s notification on %s", output.state, output.path);
                 } else {
+                  app.debug("cancelling notification (%s)", output.path);
                   notification.cancel(output.path);
-                  debug.N("actions", "cancelled notification on %s", output.path);
                 }
                 break;
               default:
@@ -88,7 +87,7 @@ module.exports = function(app) {
           }
         }))
       } else {
-        debug.N("rules", "ignoring rule %o", rule);
+        log.W("ignoring badly formed rule %o", rule);
       }
       return(a);
     }, []);

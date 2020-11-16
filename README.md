@@ -1,6 +1,6 @@
 # switchlogic
 
-Apply binary logic over switch and notification states.
+Apply binary logic over Signal K switch and notification states.
 
 This project implements a plugin for the
 [Signal K Node server](https://github.com/SignalK/signalk-server-node).
@@ -9,47 +9,48 @@ Reading the
 [Alarm, alert and notification handling](http://signalk.org/specification/1.0.0/doc/notifications.html)
 section of the Signal K documentation may provide helpful orientation.
 
-__signalk-switchlogic__ processes a collection of user-defined rules
-each of which consists of an *input expression* and an *output target*.
+__switchlogic__ operates a collection of user-defined rules each of
+which consists of an *input expression* and an *output target*.
 
 An *input expression* is a boolean expression whose operands are the
-values of Signal K paths in either the "notification...." or
-"electrical.switches...." trees.
+values of Signal K paths.
 
-An *output target* specifies a Signal K path which should be updated
-with the value of *input expression* and must specify a Signal K path
-in either the "notifications..." or "electrical.switches...." trees.
-Notification output targets are updated via a Signal K delta whilst
-switch targets are updated by a Signal K put.
+An *output target* is a Signal K path which will be updated with
+the value of *input expression*.
+
+Operand and target paths must specify keys in either the
+'notifications.' or 'electrical.switches.' trees.
+Notification targets are updated via a Signal K delta whilst switch
+targets are updated by a Signal K put.
 
 ## System requirements
 
-__signalk-switchlogic__ has no special installation requirements.
+__switchlogic__ has no special installation requirements.
 
 ## Installation
 
-Download and install __signalk-switchlogic__ using the "Appstore" menu
-option in your Signal K Node server console.
+Download and install __switchlogic__ using the "Appstore" menu option
+in your Signal K Node server console.
 The plugin can also be obtained from the 
-[project homepage](https://github.com/preeve9534/signalk-switchlogic)
+[project homepage](https://github.com/preeve9534/switchlogic)
 and installed using
 [these instructions](https://github.com/SignalK/signalk-server-node/blob/master/SERVERPLUGINS.md).
 
 ## Using the plugin
 
-__signalk-switchlogic__ operates autonomously, but must be configured
-before use.
+__switchlogic__ operates autonomously, but must be configured before
+use.
 
-The plugin configuration is stored in the file ```switchlogic.json```
-and can be maintained using the Signal K plugin configuration GUI.
+The plugin configuration is stored in the file 'switchlogic.json' and
+can be maintained using the Signal K plugin configuration GUI.
 
 The configuration consists of a collections of *rule definitions* each
 of which specifies an input condition that determines an output state.
 
 __Rule definitions__ [rules]\
 This array property can contain an arbitrary number of *rule
-definitions* each of which is characterised by the following
-properties.
+definitions* each of which is characterised by the following 
+roperties.
 
 __Input expression__ [input]\
 This required string property introduces a boolean *input expression*.
@@ -154,33 +155,27 @@ I use this rule to manage my waste pump-out.
 
 Switch channel [0,5] and [0,6] refer to switch input channels on an
 NMEA 2000 switch input module mounted below the helm panel.
-This in turn takes connections from the "AUTO" and "MANUAL"
-terminals on my two-position pump out switch.
+These channels are connected to the "AUTO" and "MANUAL" terminals on
+my two-position pump out switch.
 
 Data from an NMEA 2000 tank level sensor is processed by the
-[signalk-threshold-notifier](https://github.com/preeve9534/signalk-threshold-notifier#readme)
-plugin into alert notifications, one of which become another operand
+[threshold-notifier](https://github.com/preeve9534/threshold-notifier#readme)
+plugin into alert notifications, one of which becomes an operand
 of the input expression.
 
 Output from the rule is written as a put request to the specified
 switch channel.
 
 The 
-[signalk-switchbank](https://github.com/preeve9534/signalk-switchbank#readme)
+[switchbank](https://github.com/preeve9534/switchbank#readme)
 plugin incorporates an action handler which picks up the put request
-and transmits as an NMEA 2000 PGN 127502 message to operate the waste
-pump connected to relay number 4 on an NMEA 2000 relay output module
-10.
+and responds by transmitting an NMEA 2000 PGN 127502 message to operate
+the waste pump connected to relay number 4 on NMEA 2000 relay output
+module 10.
 
 ## Debugging and logging
 
-The plugin understands the following debug keys.
-
-| Key | Meaning                                                                                                   |
-|:-------------------|:-------------------------------------------------------------------------------------------|
-| switchbank:\*      | Enable all keys.                                                                           | 
-| switchbank:puts    | Log each output action taken by the plugin.                                                |
-| switchbank:rules   | Log each rule loaded by the plugin and indicate whether it was successfully parsed or not. |
+The plugin understands the 'switchbank' debug key.
 
 ## Author
 
