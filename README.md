@@ -23,6 +23,10 @@ Operand and target paths must specify keys in either the
 Notification targets are updated via a Signal K delta whilst switch
 targets are updated by a Signal K put.
 
+With appropriate notification and put handlers __switchlogic__ provides
+a generic solution to the problem of doing something when a switch is
+operated.
+
 ## System requirements
 
 __switchlogic__ has no special installation requirements.
