@@ -103,35 +103,34 @@ These are the ground rules.
 3. Expressions can be disambiguated or clarified by the use of
    parentheses.
 
-Examples of valid expressions are "[10,3]", "(not [10,4])" and
-"[10,3] and notifications.tanks.wasteWater.0.level:alert".
+Examples of valid expressions are '[10,3]', '(not [10,4])' and
+'[10,3] and notifications.tanks.wasteWater.0.level:alert'.
 
 ### Output property values
 
-There are two possible forms for an __output__ property value. 
+There are two types of __output__ property value. 
 
-1. Output to a notification path is specified by a string of the form:
+1. The first type directs output to a Signal K notification and must have the form:
 
-   *path*[__:__[*state*][__:__[*method*][__:__[*description*]]]]
+  *path*[__:__[*state*][__:__[*method*][__:__[*description*]]]]
 
-   Where *path* is a notification path, and *state*, *method* and
-   *description* optionally set the corresponding properties of any
-   issued notification. 
-   If these options are not specified then they will default to
-   "alert", [] and "Inserted by signalk-switchbank".
+  Where *path* is a notification path, and *state*, *method* and
+  *description* optionally set the corresponding properties of any
+  issued notification. 
+  If these options are not specified then they will default to
+  "alert", [] and "Inserted by signalk-switchbank".
 
    A notification will be issued when the associated *input expression*
    resolves to 1 and cancelled when it resolves to 0.
 
-2. Output to a switch path is specified by a string of the form:
+2. The second type directs output to a Signal K switch path and must have the form:
 
    __[__[*b*__,__]*c*__]__
 
-   which is expanded to a switch path as described for 1.2 except that
-   the terminal key will be 'control' rather than 'state'.
+   which is expanded to a switch path as described above.
 
-   The resolved value, *v*, of the input expression is output to the
-   specified path as a Signal K put request.
+   The resolved value of the input expression will be output to the specified
+   switch path as a Signal K put request.
 
 ## A real example
 
