@@ -5,7 +5,8 @@ Apply binary logic over switch and notification states.
 This project implements a plugin for the
 [Signal K Node server](https://github.com/SignalK/signalk-server-node).
 
-Reading the [Alarm, alert and notification handling](http://signalk.org/specification/1.0.0/doc/notifications.html)
+Reading the
+[Alarm, alert and notification handling](http://signalk.org/specification/1.0.0/doc/notifications.html)
 section of the Signal K documentation may provide helpful orientation.
 
 __signalk-switchlogic__ processes a collection of user-defined rules
@@ -18,6 +19,8 @@ values of Signal K paths in either the "notification...." or
 An *output target* specifies a Signal K path which should be updated
 with the value of *input expression* and must specify a Signal K path
 in either the "notifications..." or "electrical.switches...." trees.
+Notification output targets are updated via a Signal K delta whilst
+switch targets are updated by a Signal K put.
 
 ## System requirements
 
@@ -38,54 +41,37 @@ __signalk-switchlogic__ operates autonomously, but must be configured
 before use.
 
 The plugin configuration is stored in the file ```switchlogic.json```
-and can be maintained using the Signal K plugin configuration GUI or by
-directly editing the file using a text editor.
+and can be maintained using the Signal K plugin configuration GUI.
 
-The general structure of the configuration file is illustrated below.
-```
-{
-  "enabled": false,
-  "enableLogging": false,
-  "configuration": {
-    "rules": [
-      *** ONE OR MORE RULE DEFINITIONS ***
-    ]
-  }
-}
-```
+The configuration consists of a collections of *rule definitions* each
+of which specifies an input condition that determines an output state.
 
-The __rules__ property introduces an array which contains an arbitrary
-number of rule definitions, for example:
-```
-    {
-      "input": "[0,1]",
-      "output": "[12,1]",
-      "description": "Immersion heater 1kW"
-    }
-```
+__Rule definitions__ [rules]\
+This array property can contain an arbitrary number of *rule
+definitions* each of which is characterised by the following
+properties.
 
-The __input__ property introduces a string value containing a boolean
-*input expression*.
-Operands in *input expression* refer to paths in the Signal K
-"notifications...." and "electrical,switches...." trees and values
-appearing on these paths become the value of the operands.
-In the simple example given above, the expression result will just be
-the values of the operand "[0,1]" which concisely specifies the Signal K
-path "electrical.switches.bank.0.1.state".
-There is a full explanation of *input expression* syntax below.
+__Input expression__ [input]\
+This required string property introduces a boolean *input expression*.
+Operands in input expression refer to paths in the Signal K
+"notifications...." and "electrical.switches...." trees and values
+appearing on these paths become the value of the expression operands.
 
-The __output__ property value specifies both the Signal K path that
-should be updated with the value of *input expression* and also the
-mechanism through which that update should occur.
-The shorthand used in the example above says "update the value of the
-switch bank path 'electrical.switches.bank.12.1.state'" and (by virtue
-of the single brackets) "do this by writing a command to the *control
-channel* specified by the __controlchannel__ property."
+The simplest expression possible is just an operand and a short-form
+example of this might be '[0,1]' which concisely specifies the Signal K
+path 'electrical.switches.bank.0.1.state'.
+There is a full explanation of input expression syntax below.
+
+__Output target__ [output]\
+This required string  property specifies the Signal K path that should
+be updated with the value of *input expression* and also the mechanism
+through which that update should occur.
 See below for a more complete discussion of valid __output__ property
 values.
  
-The __description__ property value supplies some text that will be
-used to identify the rule in status and debug outputs.
+__Description__ [description]\
+This optional string property supplies some text that will be used to
+identify the rule in status and debug outputs.
 
 ### Input expression syntax
 
@@ -130,7 +116,7 @@ Examples of valid expressions are "[10,3]", "(not [10,4])" and
 
 ### Output property values
 
-There are three possible forms for an __output__ property value. 
+There are two possible forms for an __output__ property value. 
 
 1. Output to a notification path is specified by a string of the form:
 
@@ -152,15 +138,8 @@ There are three possible forms for an __output__ property value.
    which is expanded to a switch path as described for 1.2 except that
    the terminal key will be 'control' rather than 'state'.
 
-   The resolved value, *v*, of the input expression is written to the
-   specified path as the JSON object:
-```
-   {
-     "moduleid": "*b*",
-     "channelid":  "*c*",
-     "state": *v*
-   }
-```
+   The resolved value, *v*, of the input expression is output to the
+   specified path as a Signal K put request.
 
 ## A real example
 
@@ -183,13 +162,15 @@ Data from an NMEA 2000 tank level sensor is processed by the
 plugin into alert notifications, one of which become another operand
 of the input expression.
 
-Output from the rule is written the 'control' key on the specified
+Output from the rule is written as a put request to the specified
 switch channel.
+
 The 
 [signalk-switchbank](https://github.com/preeve9534/signalk-switchbank#readme)
-plugin picks up this signal and transmits as an NMEA 2000 PGN 127502 message to operate
-the waste pump connected to relay number 4 on an NMEA 2000 relay output
-module 10.
+plugin incorporates an action handler which picks up the put request
+and transmits as an NMEA 2000 PGN 127502 message to operate the waste
+pump connected to relay number 4 on an NMEA 2000 relay output module
+10.
 
 ## Debugging and logging
 
@@ -198,7 +179,7 @@ The plugin understands the following debug keys.
 | Key | Meaning                                                                                                   |
 |:-------------------|:-------------------------------------------------------------------------------------------|
 | switchbank:\*      | Enable all keys.                                                                           | 
-| switchbank:actions | Log each output action taken by the plugin.                                                |
+| switchbank:puts    | Log each output action taken by the plugin.                                                |
 | switchbank:rules   | Log each rule loaded by the plugin and indicate whether it was successfully parsed or not. |
 
 ## Author

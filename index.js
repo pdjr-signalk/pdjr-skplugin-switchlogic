@@ -14,7 +14,6 @@
  * permissions and limitations under the License.
  */
 
-const fs = require('fs');
 const bacon = require('baconjs');
 const Log = require("./lib/signalk-liblog/Log.js");
 const DebugLog = require("./lib/signalk-liblog/DebugLog.js");
@@ -24,7 +23,7 @@ const ExpressionParser = require("./lib/expression-parser/ExpressionParser.js");
 
 const PLUGIN_SCHEMA_FILE = __dirname + "/schema.json";
 const PLUGIN_UISCHEMA_FILE = __dirname + "/uischema.json";
-const PLUGIN_DEBUG_TOKENS = [ "rules", "actions" ];
+const PLUGIN_DEBUG_TOKENS = [ "rules", "puts" ];
 
 module.exports = function(app) {
   var plugin = {};
@@ -71,11 +70,7 @@ module.exports = function(app) {
             switch (output.type) {
               case "switch":
                 var path = "electrical.switches." + ((output.instance === undefined)?"":("bank." + output.instance + ".")) + output.channel;
-                var deltas = { "path": path + ".control", "value": { "moduleid": output.instance, "channelid": output.channel, "state": action } };
-                debug.N("actions", "issuing update %o", deltas);
-                app.handleMessage(plugin.id, makeDelta(plugin.id, deltas));
-                var putdelta = { "context": "vessels.self", "correlationId": "184743-434373-348483", "put": { "path": path, "source": plugin.id, "value": action } };
-                app.handleMessage(plugin.id, putdelta);
+                app.putSelfPath(path + ".state", action, (d) => debug.N("put", d.message));
                 break;
               case "notification":
                 if (action) {
