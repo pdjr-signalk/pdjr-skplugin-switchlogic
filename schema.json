@@ -2,15 +2,14 @@
   "type": "object",
   "properties": {
     "rules": {
-      "title": "Rules",
+      "title": "Rule definitions",
       "type": "array",
-      "default": [],
       "items": {
         "type": "object",
         "required": [ "input", "output" ],
         "properties": {
           "input": {
-            "title": "Input",
+            "title": "Input expression",
             "type": "array",
             "default": [],
             "items": {
@@ -19,7 +18,7 @@
             }
           },
           "output": {
-            "title": "Output",
+            "title": "Output target",
             "type": "string",
             "default": ""
           },
@@ -29,7 +28,8 @@
             "default": ""
           }
         }
-      }
+      },
+      "default": []
     }
   }
 }
