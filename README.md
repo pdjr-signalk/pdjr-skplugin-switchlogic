@@ -165,7 +165,7 @@ module 10.
 
 ## Debugging and logging
 
-The plugin understands the 'switchbank' debug key.
+The plugin understands the 'switchlogic' debug key.
 
 ## Author
 
