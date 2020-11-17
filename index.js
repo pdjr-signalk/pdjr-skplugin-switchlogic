@@ -32,7 +32,7 @@ module.exports = function(app) {
 
   plugin.id = "switchlogic";
   plugin.name = "Switch logic";
-  plugin.description = "Apply binary logic over switch and notification states.";
+  plugin.description = "Apply binary logic over Signal K switch and notification states.";
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   const notification = new Notification(app, plugin.id);

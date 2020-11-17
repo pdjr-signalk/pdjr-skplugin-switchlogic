@@ -1,4 +1,4 @@
-# switchlogic
+# signalk-switchlogic
 
 Apply binary logic over Signal K switch and notification states.
 
@@ -9,8 +9,8 @@ Reading the
 [Alarm, alert and notification handling](http://signalk.org/specification/1.0.0/doc/notifications.html)
 section of the Signal K documentation may provide helpful orientation.
 
-__switchlogic__ operates a collection of user-defined rules each of
-which consists of an *input expression* and an *output target*.
+__signalk-switchlogic__ operates a collection of user-defined rules
+each of which consists of an *input expression* and an *output target*.
 
 An *input expression* is a boolean expression whose operands are the
 values of Signal K paths.
@@ -23,27 +23,27 @@ Operand and target paths must specify keys in either the
 Notification targets are updated via a Signal K delta whilst switch
 targets are updated by a Signal K put.
 
-With appropriate notification and put handlers __switchlogic__ provides
-a generic solution to the problem of doing something when a switch is
-operated.
+With appropriate notification and put handlers __signalk-switchlogic__
+provides a generic solution to the problem of doing something when a
+switch is operated.
 
 ## System requirements
 
-__switchlogic__ has no special installation requirements.
+__signalk-switchlogic__ has no special installation requirements.
 
 ## Installation
 
-Download and install __switchlogic__ using the "Appstore" menu option
-in your Signal K Node server console.
+Download and install __signalk-switchlogic__ using the "Appstore" menu
+option in your Signal K Node server console.
 The plugin can also be obtained from the 
-[project homepage](https://github.com/preeve9534/switchlogic)
+[project homepage](https://github.com/preeve9534/signalk-switchlogic)
 and installed using
 [these instructions](https://github.com/SignalK/signalk-server-node/blob/master/SERVERPLUGINS.md).
 
 ## Using the plugin
 
-__switchlogic__ operates autonomously, but must be configured before
-use.
+__signalk-switchlogic__ operates autonomously, but must be configured
+before use.
 
 The plugin configuration is stored in the file 'switchlogic.json' and
 can be maintained using the Signal K plugin configuration GUI.
@@ -114,7 +114,8 @@ Examples of valid expressions are '[10,3]', '(not [10,4])' and
 
 There are two types of __output__ property value. 
 
-1. The first type directs output to a Signal K notification and must have the form:
+1. The first type directs output to a Signal K notification and must
+   have the form:
 
   *path*[__:__[*state*][__:__[*method*][__:__[*description*]]]]
 
@@ -161,7 +162,7 @@ Output from the rule is written as a put request to the specified
 switch channel.
 
 The 
-[switchbank](https://github.com/preeve9534/switchbank#readme)
+[signalk-switchbank](https://github.com/preeve9534/signalk-switchbank#readme)
 plugin incorporates an action handler which picks up the put request
 and responds by transmitting an NMEA 2000 PGN 127502 message to operate
 the waste pump connected to relay number 4 on NMEA 2000 relay output
@@ -169,7 +170,7 @@ module 10.
 
 ## Debugging and logging
 
-The plugin understands the 'switchlogic' debug key.
+__signalk-switchlogic__ understands the 'switchlogic' debug key.
 
 ## Author
 
