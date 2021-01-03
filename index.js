@@ -173,7 +173,7 @@ module.exports = function(app) {
         default:
           break; 
       }
-      if (retval.stream) retval.stream = retval.stream.skipDuplicates().filter((v) => ((!isNaN(v))i && ((v == 0) || (v == 1))));
+      if (retval.stream) retval.stream = retval.stream.filter((v) => ((!isNaN(v))i && ((v == 0) || (v == 1)))).skipDuplicates();
     }
 
     return(retval);
