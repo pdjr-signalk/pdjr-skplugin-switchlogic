@@ -1,4 +1,4 @@
-# signalk-switchlogic
+# pdjr-skplugin-switchlogic
 
 Apply binary logic over Signal K switch and notification states.
 
@@ -9,7 +9,7 @@ Reading the
 [Alarm, alert and notification handling](http://signalk.org/specification/1.0.0/doc/notifications.html)
 section of the Signal K documentation may provide helpful orientation.
 
-__signalk-switchlogic__ operates a collection of user-defined rules
+__pdjr-skplugin-switchlogic__ operates a collection of user-defined rules
 each of which consists of an *input expression* and an *output target*.
 
 An *input expression* is a boolean expression whose operands are the
@@ -23,26 +23,26 @@ Operand and target paths must specify keys in either the
 Notification targets are updated via a Signal K delta whilst switch
 targets are updated by a Signal K put.
 
-With appropriate notification and put handlers __signalk-switchlogic__
+With appropriate notification and put handlers __pdjr-skplugin-switchlogic__
 provides a generic solution to the problem of doing something when a
 switch is operated.
 
 ## System requirements
 
-__signalk-switchlogic__ has no special installation requirements.
+__pdjr-skplugin-switchlogic__ has no special installation requirements.
 
 ## Installation
 
-Download and install __signalk-switchlogic__ using the "Appstore" menu
+Download and install __pdjr-skplugin-switchlogic__ using the "Appstore" menu
 option in your Signal K Node server console.
 The plugin can also be obtained from the 
-[project homepage](https://github.com/preeve9534/signalk-switchlogic)
+[project homepage](https://github.com/preeve9534/pdjr-skplugin-switchlogic)
 and installed using
 [these instructions](https://github.com/SignalK/signalk-server-node/blob/master/SERVERPLUGINS.md).
 
 ## Using the plugin
 
-__signalk-switchlogic__ operates autonomously, but must be configured
+__pdjr-skplugin-switchlogic__ operates autonomously, but must be configured
 before use.
 
 The plugin configuration is stored in the file 'switchlogic.json' and
@@ -170,7 +170,7 @@ module 10.
 
 ## Debugging and logging
 
-__signalk-switchlogic__ understands the 'switchlogic' debug key.
+__pdjr-skplugin-switchlogic__ understands the 'switchlogic' debug key.
 
 ## Author
 
