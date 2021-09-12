@@ -1,6 +1,6 @@
 # pdjr-skplugin-switchlogic
 
-Apply binary logic over Signal K switch and notification states.
+Apply binary logic over Signal K path values.
 
 This project implements a plugin for the
 [Signal K Node server](https://github.com/SignalK/signalk-server-node).
@@ -12,20 +12,23 @@ section of the Signal K documentation may provide helpful orientation.
 __pdjr-skplugin-switchlogic__ operates a collection of user-defined rules
 each of which consists of an *input expression* and an *output target*.
 
-An *input expression* is a boolean expression whose operands are the
-values of Signal K paths.
+An *input expression* is a boolean expression in which each variable
+operand is a Signal K value identified by its path.
 
 An *output target* is a Signal K path which will be updated with
-the value of *input expression*.
+either the value of *input expression* or some specified constant value.
 
-Operand and target paths must specify keys in either the
-'notifications.' or 'electrical.switches.' trees.
-Notification targets are updated via a Signal K delta whilst switch
-targets are updated by a Signal K put.
+There are some special treatments and convenience notations for path names
+in both input expressions and targets.
 
-With appropriate notification and put handlers __pdjr-skplugin-switchlogic__
-provides a generic solution to the problem of doing something when a
-switch is operated.
+In general, targets values are updated using the Signal K 'put' function
+since this allows an application to install a bespoke put handler.
+Targets in the 'notifications.\*' tree are updated directly using a
+Signal K delta.
+
+With appropriate supporting put handlers __pdjr-skplugin-switchlogic__
+provides a generic solution to the problem of doing something when something
+happens: perhaps as simple as operating a relay when a switch is pressed.
 
 ## System requirements
 
@@ -58,8 +61,7 @@ roperties.
 
 __Input expression__ [input]\
 This required string property introduces a boolean *input expression*.
-Operands in input expression refer to paths in the Signal K
-"notifications...." and "electrical.switches...." trees and values
+Operands in input expression refer to paths in the Signal K tree and values
 appearing on these paths become the value of the expression operands.
 
 The simplest expression possible is just an operand and a short-form
@@ -86,13 +88,14 @@ These are the ground rules.
 
 1. An operand must be one of:
 
-* a reference to a Signal K notification path of the form '*path*[__:__*state*]'.
+* a token of the form '*path*[__:__*value*]'.
 
-  If *state* is not specified then the operand will be true if a notification
-  exists on *path*, otherwise false.
-  If *state* is specified, then the operand will be true if a notification
-  exists on *path* and its state property value is equal to *state* and
-  otherwise false.
+  If *value* is not specified then the operand will be true if *path* has
+  a non-null value.
+  If *value* is specified and *path* does not specify a key in the 'notification.\*'
+  tree, then the operand will be true if the value of *path* equals *value*.
+  If *path* does specify a notification key, then the operand will be true if the
+  value of the specified notification state property equals *value*.
 
 * a reference to a Signal K switch path of the form '__[__[*b*__,__]*c*__]__'.
 
