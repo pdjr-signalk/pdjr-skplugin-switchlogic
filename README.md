@@ -22,9 +22,10 @@ There are some special treatments and convenience notations for path names
 in both input expressions and targets.
 
 In general, targets values are updated using the Signal K 'put' function
-since this allows an application to install a bespoke put handler.
-Targets in the 'notifications.\*' tree are updated directly using a
-Signal K delta.
+since this allows an application to install a bespoke put handler
+which can implement whatever action is required.
+Targets in the 'notifications.\*' tree are exceptional in that they are
+updated directly using a Signal K delta.
 
 With appropriate supporting put handlers __pdjr-skplugin-switchlogic__
 provides a generic solution to the problem of doing something when something
@@ -115,18 +116,25 @@ Examples of valid expressions are '[10,3]', '(not [10,4])' and
 
 ### Output property values
 
-There are two types of __output__ property value. 
+There are three possible types of __output__ property value. 
 
-1. The first type directs output to a Signal K notification and must
-   have the form:
+1. *path*[__:__*true-value*__,__*false-value__]
 
-  *path*[__:__[*state*][__:__[*method*][__:__[*description*]]]]
+   Where *path* is a Signal K path somewhere other than in the
+   notification tree and *true-value* and *false-value*, if specified,
+   define the values that will be output to *path* using a Signal K put
+   request in response to changes in *input-expression*.
+   
+   If *true-value* and *false-value* are not specified, then the value
+   1 will be output is *input-expression* resolves tru, otherwise 0.
+   
+2. *notification-path*[__:__*state*[__:__*method*[__:__*description*]]]
 
   Where *path* is a notification path, and *state*, *method* and
   *description* optionally set the corresponding properties of any
   issued notification. 
   If these options are not specified then they will default to
-  "alert", [] and "Inserted by signalk-switchbank".
+  "alert", [] and "Inserted by signalk-switchlogic".
 
    A notification will be issued when the associated *input expression*
    resolves to 1 and cancelled when it resolves to 0.
