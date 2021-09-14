@@ -5,27 +5,25 @@ Apply binary logic over Signal K path values.
 This project implements a plugin for the
 [Signal K Node server](https://github.com/SignalK/signalk-server-node).
 
-Reading the
-[Alarm, alert and notification handling](http://signalk.org/specification/1.0.0/doc/notifications.html)
-section of the Signal K documentation may provide helpful orientation.
-
 __pdjr-skplugin-switchlogic__ operates a collection of user-defined rules
 each of which consists of an *input expression* and an *output target*.
 
-An *input expression* is a boolean expression in which each variable
-operand is a Signal K value identified by its path.
+*input expression* is a boolean expression in which each variable operand
+is a data value identified by a Signal K path.
+This expression returns the 0 (false) or 1 (true).
 
-An *output target* is a Signal K path which will be updated with
-either the value of *input expression* or some specified constant value.
+*output target* is a Signal K path which will be updated with either the
+value of *input expression* or some specified constant values into which
+0 or 1 can be mapped.
 
 There are some special treatments and convenience notations for path names
 in both input expressions and targets.
 
-In general, targets values are updated using the Signal K 'put' function
-since this allows an application to install a bespoke put handler
-which can implement whatever action is required.
-Targets in the 'notifications.\*' tree are exceptional in that they are
-updated directly using a Signal K delta.
+In general, an *output target* is updated using the Signal K 'put' function.
+Arbitrary bespoke put handlers can be used to implement whatever action is
+required when a request is made to change the value of the target path.
+Exceptionally, targets in the Signal K 'notifications.\*' tree are updated
+directly using a Signal K delta.
 
 With appropriate supporting put handlers __pdjr-skplugin-switchlogic__
 provides a generic solution to the problem of doing something when something
@@ -62,16 +60,28 @@ roperties.
 
 __Input expression__ [input]\
 This required string property introduces a boolean *input expression*.
-Operands in input expression refer to paths in the Signal K tree and values
-appearing on these paths become the value of the expression operands.
 
-The simplest expression possible is just an operand and a short-form
-example of this might be '[0,1]' which concisely specifies the Signal K
-path 'electrical.switches.bank.0.1.state'.
+Operands in input expression refer to paths in the Signal K tree and values
+appearing on these paths become the boolean values over which the expression
+is applied.
+Signal K data with values 0 and 1 (like switches) can be used directly in
+an expression, but other values must be mapped to 0 and 1 using some
+comparison test.
+At the time of writing the only test available is equality.
+
+And, or and not operators can be used to build arbitrarily complex
+conditions, for example:
+```
+1. 'electrical.switches.bank.0.1.state'\
+2. '[0,1]'\
+3. '[0,1] and (not [1,2])'
+4. 'electrical.venus.acSource:battery'
+```
+
 There is a full explanation of input expression syntax below.
 
 __Output target__ [output]\
-This required string  property specifies the Signal K path that should
+This required string property specifies the Signal K path that should
 be updated with the value of *input expression* and also the mechanism
 through which that update should occur.
 See below for a more complete discussion of valid __output__ property
