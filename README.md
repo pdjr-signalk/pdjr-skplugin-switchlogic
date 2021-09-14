@@ -11,18 +11,18 @@ Each rule consists of an *input expression* and an *output target*.
 
 *input expression* is a boolean expression in which each variable operand
 is a Signal K data value identified by its path.
-A well-formed expression will evaluate to either 0 (false) or 1 (true).
 
-*output target* is a Signal K path which will be updated with either the
-value of *input expression* or some specified constant values into which
-0 or 1 will be mapped.
+*output target* is a Signal K path which will be dynamically updated with
+the value of either *input expression* (0 or 1) or some corresponding,
+user-defined, alternative values.
 
 There are some special treatments and convenience notations for path names
-in both input expressions and targets.
+in both *input expression*s and *output target*s.
 
-In general, an *output target* is updated using the Signal K 'put' function.
-Arbitrary bespoke put handlers can be used to implement whatever action is
-required when a request is made to change the value of the target path.
+In general, an *output target* is updated using Signal K's pre-emptable
+'put' function.
+Arbitrary, bespoke, put handlers can be used to implement whatever action
+is required when a request is made to change the value of a target path.
 Exceptionally, targets in the Signal K 'notifications.\*' tree are updated
 directly using a Signal K delta.
 
@@ -51,13 +51,13 @@ before use.
 The plugin configuration is stored in the file 'switchlogic.json' and
 can be maintained using the Signal K plugin configuration GUI.
 
-The configuration consists of a collections of *rule definitions* each
+The configuration consists of a collection of *rule definitions* each
 of which specifies an input condition that determines an output state.
 
 __Rule definitions__ [rules]\
 This array property can contain an arbitrary number of *rule
 definitions* each of which is characterised by the following 
-roperties.
+properties.
 
 __Input expression__ [input]\
 This required string property introduces a boolean *input expression*.
@@ -65,26 +65,38 @@ This required string property introduces a boolean *input expression*.
 Operands in input expression refer to paths in the Signal K tree and values
 appearing on these paths become the boolean values over which the expression
 is applied.
-Signal K data with values 0 and 1 (like switches) can be used directly in
-an expression, but other values must be mapped to 0 and 1 using some
-comparison test.
-At the time of writing the only test available is equality.
+In the plugin boolean values are represented as 0 (false) and 1 (true) which
+allows Signal K switch state values to be used directly in an expression, but
+other path values must be mapped to 0 and 1 using a comparison test.
 
-And, or and not operators can be used to build arbitrarily complex
+'and', 'or' and 'not' operators can be used to build arbitrarily complex
 conditions, for example:
 ```
 1. 'electrical.switches.bank.0.1.state'\
 2. '[0,1]'\
-3. '[0,1] and (not [1,2])'
-4. 'electrical.venus.acSource:battery'
+3. '[0,1] and (not [1,2])'\
+4. 'electrical.venus.acSource:battery'\
+5. 'tanks.wasteWater.0.currentLevel:gt:0.7 and [0,6]'
 ```
 
 There is a full explanation of input expression syntax below.
 
 __Output target__ [output]\
 This required string property specifies the Signal K path that should be updated
-dependent upon the value of *input expression* and, if 0 and 1 are inappropriate,
-also the values that should be used in the update.
+dependent upon the value of *input expression* and also the values that should be
+used in the update.
+There are a few alternative notations.
+
+1. __[__[*b*__,__]*c*__]__
+
+   Use a put request to update the specified switch path with the value of
+   *input expression* (either 0 or 1)
+   
+   A full Signal K switch path is derived from this short-form in the way described above.
+
+    will be output to the specified
+   switch path as a Signal K put request.
+
 For example:
 ```
 1. "[15,3]"\
@@ -106,13 +118,23 @@ These are the ground rules.
 
 1. An operand must be one of:
 
-* a token of the form '*path*[__:__*value*]'.
+* a token of the form '*path*[__:__[*comparator*__:__]*value*]'.
 
-  If *value* is not supplied then the operand will be true if *path* has
-  a non-null value.
+  If *comparator* and *value* are not supplied then the operand will be true if
+  *path* has a non-null value.
   
   If *value* is supplied and *path* does not specify a key in the 'notification.\*'
   tree, then the operand will be true if the value of *path* equals *value*.
+  If required, one of the following *comparator* tokens can be supplied to tweak
+  the nature of the test for truthiness.
+  
+  'eq' - true if the value of *path* is equal to *value*\
+  'ne' - true if the value of *path* is not equal to *value*\
+  'lt' - true if the value of *path* is less than *value*\
+  'le' - true if the value of *path* is less than or equal to *value*\
+  'gt' - true if the value of *path* is greater than *value*\
+  'ge' - true if the value of *path* is greater than or equal to *value*
+  
   If *path* does specify a notification key, then the operand will be true if the
   value of the specified notification state property equals *value*.
 
@@ -128,9 +150,6 @@ These are the ground rules.
 
 3. Expressions can be disambiguated or clarified by the use of
    parentheses.
-
-Examples of valid expressions are '[10,3]', '(not [10,4])' and
-'[10,3] and notifications.tanks.wasteWater.0.level:alert'.
 
 ### Output property values
 
@@ -148,23 +167,14 @@ There are three possible types of __output__ property value.
    
 2. *notification-path*[__:__*state*[__:__*method*[__:__*description*]]]
 
-  Where *path* is a notification path, and *state*, *method* and
-  *description* optionally set the corresponding properties of any
-  issued notification. 
-  If these options are not specified then they will default to
-  "alert", [] and "Inserted by signalk-switchlogic".
+   Where *notification-path* is a path in the Signal K 'notifications...' tree
+   and *state*, *method* and *description* optionally set the corresponding
+   properties of any issued notification. 
+   If these options are not specified then they will default to 'alert', [] and ''.
 
    A notification will be issued when the associated *input expression*
    resolves to 1 and cancelled when it resolves to 0.
 
-2. The second type directs output to a Signal K switch path and must have the form:
-
-   __[__[*b*__,__]*c*__]__
-
-   which is expanded to a switch path as described above.
-
-   The resolved value of the input expression will be output to the specified
-   switch path as a Signal K put request.
 
 ## A real example
 
