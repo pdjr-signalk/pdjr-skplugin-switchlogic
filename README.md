@@ -10,11 +10,11 @@ each of which consists of an *input expression* and an *output target*.
 
 *input expression* is a boolean expression in which each variable operand
 is a data value identified by a Signal K path.
-This expression returns the 0 (false) or 1 (true).
+A well-formed expression will evaluate to either 0 (false) or 1 (true).
 
 *output target* is a Signal K path which will be updated with either the
 value of *input expression* or some specified constant values into which
-0 or 1 can be mapped.
+0 or 1 will be mapped.
 
 There are some special treatments and convenience notations for path names
 in both input expressions and targets.
@@ -81,9 +81,15 @@ conditions, for example:
 There is a full explanation of input expression syntax below.
 
 __Output target__ [output]\
-This required string property specifies the Signal K path that should
-be updated with the value of *input expression* and also the mechanism
-through which that update should occur.
+This required string property specifies the Signal K path that should be updated
+dependent upon the value of *input expression* and, if 0 and 1 are inappropriate,
+also the values that should be used in the update.
+For example:
+```
+1. "[15,3]"\
+2. "notifications.heating:alert:visual:low system pressure"\
+```
+
 See below for a more complete discussion of valid __output__ property
 values.
  
@@ -101,9 +107,10 @@ These are the ground rules.
 
 * a token of the form '*path*[__:__*value*]'.
 
-  If *value* is not specified then the operand will be true if *path* has
+  If *value* is not supplied then the operand will be true if *path* has
   a non-null value.
-  If *value* is specified and *path* does not specify a key in the 'notification.\*'
+  
+  If *value* is supplied and *path* does not specify a key in the 'notification.\*'
   tree, then the operand will be true if the value of *path* equals *value*.
   If *path* does specify a notification key, then the operand will be true if the
   value of the specified notification state property equals *value*.
@@ -133,10 +140,10 @@ There are three possible types of __output__ property value.
    Where *path* is a Signal K path somewhere other than in the
    notification tree and *true-value* and *false-value*, if specified,
    define the values that will be output to *path* using a Signal K put
-   request in response to changes in *input-expression*.
+   request in response to changes in the computed value of *input-expression*.
    
    If *true-value* and *false-value* are not specified, then the value
-   1 will be output is *input-expression* resolves tru, otherwise 0.
+   1 will be output if *input-expression* resolves true, otherwise 0.
    
 2. *notification-path*[__:__*state*[__:__*method*[__:__*description*]]]
 
@@ -170,7 +177,7 @@ I use this rule to manage my waste pump-out.
 ```
 
 Switch channel [0,5] and [0,6] refer to switch input channels on an
-NMEA 2000 switch input module mounted below the helm panel.
+NMEA 2000 switch input module.
 These channels are connected to the "AUTO" and "MANUAL" terminals on
 my two-position pump out switch.
 
@@ -179,8 +186,7 @@ Data from an NMEA 2000 tank level sensor is processed by the
 plugin into alert notifications, one of which becomes an operand
 of the input expression.
 
-Output from the rule is written as a put request to the specified
-switch channel.
+Output from the rule is written as a put request to "electrical.switches.bank.10.4.state".
 
 The 
 [signalk-switchbank](https://github.com/preeve9534/signalk-switchbank#readme)
