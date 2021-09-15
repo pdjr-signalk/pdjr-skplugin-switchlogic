@@ -1,18 +1,19 @@
-# pdjr-skplugin-switchlogic
+# pdjr-switchlogic
 
 Apply binary logic over Signal K path values.
 
 This project implements a plugin for the
 [Signal K Node server](https://github.com/SignalK/signalk-server-node).
 
-__pdjr-skplugin-switchlogic__ applies a collection of user-defined rules
-to the Signal K data store.
-Each rule consists of an *input expression* and an *output target*.
+__pdjr-switchlogic__ allows the user to define a collection of rules
+which will be applied to the Signal K data store.
+Each rule consists of an *input expression* expression and an *output
+path*.
 
 *input expression* is a boolean expression in which each variable operand
 is a Signal K data value identified by its path.
 
-*output target* is a Signal K path which will be dynamically updated with
+*output path* is a Signal K path which will be targetted for update  be dynamically updated with
 the value of either *input expression* (0 or 1) or some corresponding,
 user-defined, alternative values.
 
