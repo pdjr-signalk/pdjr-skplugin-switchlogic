@@ -80,6 +80,23 @@ module.exports = function(app) {
                   notification.cancel(output.path);
                 }
                 break;
+              case "path":
+                if (action) {
+                  if (output.onvalue) {
+                    app.debug("issuing put request (%s <= %s)", path, output.onvalue);
+                    app.putSelfPath(path + ".value", output.onvalue, (d) => app.debug("put response: %s", d.message));
+                  } else {
+                    app.debug("cannot issue put request because onvalue is undefined");
+                  }
+                } else {
+                  if (output.offvalue) {
+                    app.debug("issuing put request (%s <= %s)", path, output.offvalue);
+                    app.putSelfPath(path + ".value", output.offvalue, (d) => app.debug("put response: %s", d.message));
+                  } else {
+                    app.debug("cannot issue put request because offvalue is undefined");
+                  }
+                }
+                break;
               default:
                 log.E("internal error - bad output type");
                 break;
@@ -110,44 +127,49 @@ module.exports = function(app) {
 
     // Parse <term> into a <retval> structure or throw an exception.
     if ((term == null) || (term == "") || (term == "off") || (term == "false") || (term == "0")) {
-      retval = {
-        "type": "off",
-        "stream": null
-      };
+      retval = { "type": "off" };
     } else if ((term == "on") || (term == "true") || (term == "1")) {
-      retval = {
-        "type": "on",
-        "stream": null
-      };
+      retval = { "type": "on" };
     } else if ((matches = term.match(/^notifications\..*/)) !== null) {
       let parts = term.split(":");
-      let path = parts[0];
-      let state = (parts.length > 1)?((parts[1] == "")?null:parts[1]):null;
-      let method = (parts.length > 2)?((parts[2] == "")?null:parts[2].split(/[\s|,]+/)):[];
-      let description = (parts.length > 3)?((parts[3] == "")?null:parts[3]):null;
-      retval = {
-        "type": "notification",
-        "stream": null,
-        "path": path,
-        "state": state,
-        "method": method,
-        "description": description
+      switch (parts.length) {
+        case 1:
+          retval = { 'type': 'notification', 'path': parts[0] };
+          break;
+        case 2:
+          retval = { 'type': 'notification', 'path': parts[0], 'state': parts[1] };
+          break;
+        case 3:
+          retval = { 'type': 'notification', 'path': parts[0], 'state': parts[1], 'method': parts[2].split(/[\s|,]+/) };
+          break;
+        case 4:
+          retval = { 'type': 'notification', 'path': parts[0], 'state': parts[1], 'method': parts[2].split(/[\s|,]+/), 'description': parts[3] };
+          break;
+        default:
+          log.E("error parsing term '%s'", term);
+          break;
       };
     } else if ((matches = term.match(/^\[(.+),(.+)\]$/)) !== null) {
-      retval = {
-        "type": "switch",
-        "stream": null,
-        "path": "electrical.switches.bank." + matches[1] + "." + matches[2] + ".state",
-        "instance": matches[1],
-        "channel": matches[2]
-      };
+      retval = { "type": "switch", "path": "electrical.switches.bank." + matches[1] + "." + matches[2] + ".state", "instance": matches[1], "channel": matches[2] };
     } else if ((matches = term.match(/^\[(.+)\]$/)) !== null) {
-      retval = {
-        "type": "switch",
-        "stream": null,
-        "path": "electrical.switches." + matches[1] + ".state",
-        "channel": matches[1]
-      };
+      retval = { "type": "switch", "path": "electrical.switches." + matches[1] + ".state", "channel": matches[1] };
+    } else if ((matches = term.match(/^.*$/)) !== null) {
+      let parts = term.split(":");
+      switch (parts.length) {
+        case 2: // is "path:value"
+          retval = { 'type': 'path', 'path': parts[0], 'value': parts[1], 'comparator': 'eq' };
+          break;
+        case 3: //
+          if (['eq','ne','lt','le','gt','ge'].includes(parts[1])) {
+            retval = { 'type': 'path', 'path': parts[0], 'value': parts[2], 'comparator': parts[1] };
+          } else {
+            retval = { 'type': 'path', 'path': parts[0], 'onvalue': parts[1], 'offvalue': parts[2] };
+          }
+          break;
+        default:
+          log.E("error parsing term '%s'", term);
+          break;
+      }
     }
 
     if ((retval) && (openstream)) {
@@ -170,12 +192,25 @@ module.exports = function(app) {
         case "switch":
           retval.stream = app.streambundle.getSelfStream(retval.path);
           break;
+        case "path":
+          if (retval.value == null) {
+            retval.stream = app.streambundle.getSelfStream(retval.path);//.map(v) => { return((v == null)?0:((v == 1)?1:0)); };
+          } else {
+            switch (retval.comparator) {
+              case 'eq': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v == s)?1:0)); }, retval.value); break;
+              case 'ne': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v != s)?1:0)); }, retval.value); break;
+              case 'lt': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v < s)?1:0)); }, retval.value); break;
+              case 'le': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v <= s)?1:0)); }, retval.value); break;
+              case 'gt': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v > s)?1:0)); }, retval.value); break;
+              case 'ge': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v >= s)?1:0)); }, retval.value); break;
+              default: break; 
+            }
+          }
         default:
-          break; 
+          break;
       }
       if (retval.stream) retval.stream = retval.stream.filter((v) => ((!isNaN(v)) && ((v == 0) || (v == 1)))).skipDuplicates();
     }
-
     return(retval);
   }
 
