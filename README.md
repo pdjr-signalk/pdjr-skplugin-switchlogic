@@ -12,24 +12,24 @@ path*.
 
 *input expression* is a boolean expression in which each variable operand
 is a Signal K data value identified by its path.
+Changes in the value of *input expression* trigger either a delta update
+(if *output path* is in the 'notifications...' tree), or, more generally,
+a put request targetted at *output path*.
+A delta update is used to create a notification if *input expression*
+becomes true and otherwise to cancel it.
+A put request can be passed either the value of *input expression* or
+some specified substitute.
 
-*output path* is a Signal K path which will be targetted for update  be dynamically updated with
-the value of either *input expression* (0 or 1) or some corresponding,
-user-defined, alternative values.
-
-There are some special treatments and convenience notations for path names
-in both *input expression*s and *output target*s.
-
-In general, an *output target* is updated using Signal K's pre-emptable
-'put' function.
 Arbitrary, bespoke, put handlers can be used to implement whatever action
-is required when a request is made to change the value of a target path.
-Exceptionally, targets in the Signal K 'notifications.\*' tree are updated
-directly using a Signal K delta.
+is required when a request is made to change the value of an *output path*
+(including not changing the path value at all).
 
 With appropriate supporting put handlers __pdjr-skplugin-switchlogic__
 provides a generic solution to the problem of doing something when something
 happens: perhaps as simple as operating a relay when a switch is pressed.
+
+There are some special treatments and convenience notations for path names
+in both *input expression*s and *output path*s.
 
 ## System requirements
 
