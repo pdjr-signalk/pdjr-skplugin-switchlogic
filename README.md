@@ -7,8 +7,7 @@ This project implements a plugin for the
 
 __pdjr-switchlogic__ allows the user to define a collection of rules
 which will be applied to the Signal K data store.
-Each rule consists of an *input expression* expression and an *output
-path*.
+Each rule consists of an *input expression* and an *output path*.
 
 *input expression* is a boolean expression in which each variable operand
 is a Signal K data value identified by its path.
@@ -21,13 +20,15 @@ A put request can be passed either the value of *input expression* or
 some specified substitute.
 
 Arbitrary, bespoke, put handlers can be used to implement whatever action
-is required when a request is made to change the value of an *output path*
+is required when a put request is made to change the value of an *output path*
 (including not changing the path value at all).
 
 With appropriate supporting put handlers the plugin provides a generic
 solution to the problem of doing something when a state change happens
 in Signal K: perhaps as simple as operating a relay when a switch is
 pressed.
+[pdjr-skplugin-switchbank](https://github.com/preeve9534/pdjr-skplugin-switchbank)
+implements a put handler for operating NMEA 2000 relay output switchbanks.
 
 ## System requirements
 
@@ -68,8 +69,10 @@ In the plugin boolean values are represented as 0 (false) and 1 (true) which
 allows Signal K switch state values to be used directly in an expression, but
 other path values must be mapped to 0 and 1 using a comparison test.
 
+There are a few notational forms that can be used to specify a variable operand.
+
 'and', 'or' and 'not' operators can be used to build arbitrarily complex
-conditions, for example:
+conditions.
 ```
 1. 'electrical.switches.bank.0.1.state'\
 2. '[0,1]'\
@@ -80,30 +83,41 @@ conditions, for example:
 
 There is a full explanation of input expression syntax below.
 
-__Output target__ [output]\
+__Output path__ [output]\
 This required string property specifies the Signal K path that should be updated
 dependent upon the value of *input expression* and also the values that should be
 used in the update.
 There are a few alternative notations.
 
-1. __[__[*b*__,__]*c*__]__
+1. __[__[*b*__,__]*c*__]__ (shorthand for a path in 'electrical.switches...')
 
-   Use a put request to update the specified switch path with the value of
-   *input expression* (either 0 or 1)
+   If *b* is not specified, then use a put to request update of 'electrical.switches.*c*.state'
+   with the value of the containing rule's *input expression* (either 0 or 1)
    
-   A full Signal K switch path is derived from this short-form in the way described above.
+   If *b* is specified, then use a put to request update of 'electrical.switches.*b*.*c*.state'
+   with the value of the containing rule's *input expression* (either 0 or 1)
 
-    will be output to the specified
-   switch path as a Signal K put request.
+2. *notification-path*[__:__*state*[__:__*method*[__:__*description*]]]
 
-For example:
-```
-1. "[15,3]"\
-2. "notifications.heating:alert:visual:low system pressure"\
-```
+   Where *notification-path* is a path in the Signal K 'notifications...' tree
+   and *state*, *method* and *description* optionally set the corresponding
+   properties of any issued notification. 
+   If these options are not specified then they will default to 'alert', [] and ''
+   respectively.
 
-See below for a more complete discussion of valid __output__ property
-values.
+   A delta will be used to issue the specified notification when the containing
+   rule's *input expression* resolves to 1 and to cancel the notification when
+   the expression resolves to 0.
+
+3. *path*[__:__*true-value*__,__*false-value__]
+
+   Where *path* is a Signal K path somewhere other than in the 'notifications...'
+   tree and *true-value* and *false-value*, if specified, define the values that
+   will be used in a put requests issued to *path* when the value of
+   *input-expression* changes.
+   
+   If *true-value* and *false-value* are not specified, then the value
+   1 will be output if *input-expression* resolves true, otherwise 0.
  
 __Description__ [description]\
 This optional string property supplies some text that will be used to
@@ -154,25 +168,6 @@ These are the ground rules.
 
 There are three possible types of __output__ property value. 
 
-1. *path*[__:__*true-value*__,__*false-value__]
-
-   Where *path* is a Signal K path somewhere other than in the
-   notification tree and *true-value* and *false-value*, if specified,
-   define the values that will be output to *path* using a Signal K put
-   request in response to changes in the computed value of *input-expression*.
-   
-   If *true-value* and *false-value* are not specified, then the value
-   1 will be output if *input-expression* resolves true, otherwise 0.
-   
-2. *notification-path*[__:__*state*[__:__*method*[__:__*description*]]]
-
-   Where *notification-path* is a path in the Signal K 'notifications...' tree
-   and *state*, *method* and *description* optionally set the corresponding
-   properties of any issued notification. 
-   If these options are not specified then they will default to 'alert', [] and ''.
-
-   A notification will be issued when the associated *input expression*
-   resolves to 1 and cancelled when it resolves to 0.
 
 
 ## A real example
