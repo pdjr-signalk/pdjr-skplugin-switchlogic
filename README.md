@@ -24,12 +24,10 @@ Arbitrary, bespoke, put handlers can be used to implement whatever action
 is required when a request is made to change the value of an *output path*
 (including not changing the path value at all).
 
-With appropriate supporting put handlers __pdjr-skplugin-switchlogic__
-provides a generic solution to the problem of doing something when something
-happens: perhaps as simple as operating a relay when a switch is pressed.
-
-There are some special treatments and convenience notations for path names
-in both *input expression*s and *output path*s.
+With appropriate supporting put handlers the plugin provides a generic
+solution to the problem of doing something when a state change happens
+in Signal K: perhaps as simple as operating a relay when a switch is
+pressed.
 
 ## System requirements
 
