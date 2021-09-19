@@ -98,7 +98,7 @@ module.exports = function(app) {
                 }
                 break;
               default:
-                log.E("internal error - bad output type");
+                log.E("internal error - bad output type (%s)", description);
                 break;
             } 
           }
