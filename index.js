@@ -21,6 +21,10 @@ const Schema = require("./lib/signalk-libschema/Schema.js");
 const Notification = require("./lib/signalk-libnotification/Notification.js");
 const ExpressionParser = require("./lib/expression-parser/ExpressionParser.js");
 
+const PLUGIN_ID = "switchlogic";
+const PLUGIN_NAME = "Switch logic processor";
+const PLUGIN_DESCRIPTION = "Apply binary logic over Signal K path values";
+
 const PLUGIN_SCHEMA_FILE = __dirname + "/schema.json";
 const PLUGIN_UISCHEMA_FILE = __dirname + "/uischema.json";
 const PLUGIN_DEBUG_TOKENS = [ "rules", "puts" ];
@@ -30,9 +34,9 @@ module.exports = function(app) {
   var unsubscribes = [];
   var switchbanks = {};
 
-  plugin.id = "pdjr-skplugin-switchlogic";
-  plugin.name = "Switch logic processor";
-  plugin.description = "Apply binary logic over Signal K switch and notification states";
+  plugin.id = PLUGIN_ID;
+  plugin.name = PLUGIN_NAME;
+  plugin.description = PLUGIN_DESCRIPTION;
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   const notification = new Notification(app, plugin.id);
@@ -54,60 +58,64 @@ module.exports = function(app) {
   }
 
   plugin.start = function(options) {
-    log.N("operating %d rule%s", options.rules.length, (options.rules.length == 1)?"":"s");
+    if ((options) && (options.rules)) {
+      log.N("operating %d rule%s", options.rules.length, (options.rules.length == 1)?"":"s");
 
-    unsubscribes = (options.rules || []).reduce((a, rule) => {
-      var description = rule.description || "";
-      var input = expressionParser.parseExpression(rule.input);
-      var output = parseTerm(rule.output, true);
-      if ((input !== null) && (output !== null) && (output.stream !== null)) {
-        app.debug("enabling %o", rule);
-        a.push(bacon.combineWith(function(iv,ov) { return((iv == ov)?-1:((iv > ov)?1:0)); }, [ input, output.stream ]).onValue(action => {
-          if (action != -1) {
-            log.N("switching " + description + " " + ((action)?"ON":"OFF"));
-            switch (output.type) {
-              case "switch":
-                var path = "electrical.switches." + ((output.instance === undefined)?"":("bank." + output.instance + ".")) + output.channel;
-                app.debug("issuing put request (%s <= %s)", path, action);
-                app.putSelfPath(path + ".state", action, (d) => app.debug("put response: %s", d.message));
-                break;
-              case "notification":
-                if (action) {
-                  app.debug("issuing notification (%s:%s)", output.path, output.state);
-                  notification.issue(output.path, output.description, output.state, output.method);
-                } else {
-                  app.debug("cancelling notification (%s)", output.path);
-                  notification.cancel(output.path);
-                }
-                break;
-              case "path":
-                if (action) {
-                  if (output.onvalue) {
-                    app.debug("issuing put request (%s <= %s)", path, output.onvalue);
-                    app.putSelfPath(path + ".value", output.onvalue, (d) => app.debug("put response: %s", d.message));
+      unsubscribes = (options.rules || []).reduce((a, rule) => {
+        var description = rule.description || "";
+        var input = expressionParser.parseExpression(rule.input);
+        var output = parseTerm(rule.output, true);
+        if ((input !== null) && (output !== null) && (output.stream !== null)) {
+          app.debug("enabling %o", rule);
+          a.push(bacon.combineWith(function(iv,ov) { return((iv == ov)?-1:((iv > ov)?1:0)); }, [ input, output.stream ]).onValue(action => {
+            if (action != -1) {
+              log.N("switching " + description + " " + ((action)?"ON":"OFF"));
+              switch (output.type) {
+                case "switch":
+                  var path = "electrical.switches." + ((output.instance === undefined)?"":("bank." + output.instance + ".")) + output.channel;
+                  app.debug("issuing put request (%s <= %s)", path, action);
+                  app.putSelfPath(path + ".state", action, (d) => app.debug("put response: %s", d.message));
+                  break;
+                case "notification":
+                  if (action) {
+                    app.debug("issuing notification (%s:%s)", output.path, output.state);
+                    notification.issue(output.path, output.description, output.state, output.method);
                   } else {
-                    app.debug("cannot issue put request because onvalue is undefined");
+                    app.debug("cancelling notification (%s)", output.path);
+                    notification.cancel(output.path);
                   }
-                } else {
-                  if (output.offvalue) {
-                    app.debug("issuing put request (%s <= %s)", path, output.offvalue);
-                    app.putSelfPath(path + ".value", output.offvalue, (d) => app.debug("put response: %s", d.message));
+                  break;
+                case "path":
+                  if (action) {
+                    if (output.onvalue) {
+                      app.debug("issuing put request (%s <= %s)", path, output.onvalue);
+                      app.putSelfPath(path + ".value", output.onvalue, (d) => app.debug("put response: %s", d.message));
+                    } else {
+                      app.debug("cannot issue put request because onvalue is undefined");
+                    }
                   } else {
-                    app.debug("cannot issue put request because offvalue is undefined");
+                    if (output.offvalue) {
+                      app.debug("issuing put request (%s <= %s)", path, output.offvalue);
+                      app.putSelfPath(path + ".value", output.offvalue, (d) => app.debug("put response: %s", d.message));
+                    } else {
+                      app.debug("cannot issue put request because offvalue is undefined");
+                    }
                   }
-                }
-                break;
-              default:
-                log.E("internal error - bad output type (%s)", description);
-                break;
-            } 
-          }
-        }))
-      } else {
-        log.W("ignoring badly formed rule %o", rule);
-      }
-      return(a);
-    }, []);
+                  break;
+                default:
+                  log.E("internal error - bad output type (%s)", description);
+                  break;
+              } 
+            }
+          }))
+        } else {
+          log.W("ignoring badly formed rule %o", rule);
+        }
+        return(a);
+      }, []);
+    } else {
+      log.N("missing configuration file");
+    }
   }
 
   plugin.stop = function() {
