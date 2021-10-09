@@ -6,15 +6,11 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": [ "input", "output" ],
         "properties": {
           "input": {
             "title": "Input expression",
-            "type": "array",
-            "default": [],
-            "items": {
-              "type": "string",
-              "default": ""
+            "type": "string",
+            "default": ""
             }
           },
           "output": {

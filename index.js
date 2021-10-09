@@ -41,10 +41,38 @@ module.exports = function(app) {
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   const notification = new Notification(app, plugin.id);
   const expressionParser = new ExpressionParser({
-    "operand": { "arity": 1, "precedence": 0, "parser": function(t) { return(parseTerm(t, true).stream); } },
-    "not":     { "arity": 1, "precedence": 3, "parser": function(s) { return(s.not()); } },
-    "and":     { "arity": 2, "precedence": 2, "parser": function(s1,s2) { return(bacon.combineWith((a,b) => (a && b), [s1, s2])); } },
-    "or":      { "arity": 2, "precedence": 1, "parser": function(s1,s2) { return(bacon.combineWith((a,b) => (a || b), [s1, s2])); } }
+    "operand": {
+                 "arity": 1,
+                 "precedence": 0,
+                 "parser": function(t) {
+                   app.debug("Executing operand parser on term %s", t);
+                   return(parseTerm(t, true).stream);
+                 }
+               },
+    "not":     {
+                 "arity": 1,
+                 "precedence": 3,
+                 "parser": function(s) {
+                   app.debug("Executing NOT function on term %d", s);
+                   return((s == 0)?1:0);
+                 }
+               },
+    "and":     {
+                 "arity": 2,
+                 "precedence": 2,
+                 "parser": function(s1,s2) {
+                   app.debug("Executing AND function on %d %d", s1, s2);
+                   return(bacon.combineWith((a,b) => ((a == 1) && (b == 1))?1:0, [s1, s2]));
+                 }
+               },
+    "or":      {
+                 "arity": 2,
+                 "precedence": 1,
+                 "parser": function(s1,s2) {
+                   app.debug("Executing OR function on %d %d", s1, s2);
+                   return(bacon.combineWith((a,b) => ((a == 1) || (b == 1))?1:0, [s1, s2]));
+                 }
+               }
   });
 
   plugin.schema = function() {
@@ -205,8 +233,13 @@ module.exports = function(app) {
             retval.stream = app.streambundle.getSelfStream(retval.path);//.map(v) => { return((v == null)?0:((v == 1)?1:0)); };
           } else {
             switch (retval.comparator) {
-              case 'eq': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v == s)?1:0)); }, retval.value); break;
-              case 'ne': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v != s)?1:0)); }, retval.value); break;
+              case 'eq': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => {
+                           return((v == null)?0:((v == s)?1:0));
+                         }, retval.value);
+                         break;
+              case 'ne': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => {
+                           return((v == null)?0:((v != s)?1:0));
+                         }, retval.value); break;
               case 'lt': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v < s)?1:0)); }, retval.value); break;
               case 'le': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v <= s)?1:0)); }, retval.value); break;
               case 'gt': retval.stream = app.streambundle.getSelfStream(retval.path).map((s,v) => { return((v == null)?0:((v > s)?1:0)); }, retval.value); break;
