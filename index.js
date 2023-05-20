@@ -15,21 +15,86 @@
  */
 
 const bacon = require('baconjs');
+
 const Log = require("./lib/signalk-liblog/Log.js");
-const DebugLog = require("./lib/signalk-liblog/DebugLog.js");
-const Schema = require("./lib/signalk-libschema/Schema.js");
 const Notification = require("./lib/signalk-libnotification/Notification.js");
 const ExpressionParser = require("./lib/expression-parser/ExpressionParser.js");
 
 const PLUGIN_ID = "switchlogic";
-const PLUGIN_NAME = "Switch logic processor";
+const PLUGIN_NAME = "pdjr-skplugin-switchlogic";
 const PLUGIN_DESCRIPTION = "Apply binary logic over Signal K path values";
+const PLUGIN_SCHEMA = {
+  "type": "object",
+  "properties": {
+    "rules": {
+      "title": "Rule definitions",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "title": "Input expression",
+            "type": "string"
+          },
+          "output": {
+            "title": "Output target",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+};
+const PLUGIN_UISCHEMA = {};
 
-const PLUGIN_SCHEMA_FILE = __dirname + "/schema.json";
-const PLUGIN_UISCHEMA_FILE = __dirname + "/uischema.json";
-const PLUGIN_DEBUG_TOKENS = [ "rules", "puts" ];
+const OPTIONS_DEFAULT = {
+  "rules": [
+  ]
+}
+
+
 
 module.exports = function(app) {
+  
+  const EXPRESSION_PARSER = {
+  "operand": {
+    "arity": 1,
+    "precedence": 0,
+    "parser": function(t) {
+      app.debug("Executing operand parser on term %s", t);
+      return(parseTerm(t, true).stream);
+    }
+  },
+  "not": {
+    "arity": 1,
+    "precedence": 3,
+    "parser": function(s) {
+      app.debug("Executing NOT function on term %d", s);
+      return((s === 0)?1:0);
+    }
+  },
+  "and": {
+    "arity": 2,
+    "precedence": 2,
+    "parser": function(s1,s2) {
+      app.debug("Executing AND function on %d %d", s1, s2);
+      return(bacon.combineWith((a,b) => ((a === 1) && (b === 1))?1:0, [s1, s2]));
+    }
+  },
+  "or": {
+    "arity": 2,
+    "precedence": 1,
+    "parser": function(s1,s2) {
+      app.debug("Executing OR function on %d %d", s1, s2);
+      return(bacon.combineWith((a,b) => ((a === 1) || (b === 1))?1:0, [s1, s2]));
+    }
+  }
+  };
+
   var plugin = {};
   var unsubscribes = [];
   var switchbanks = {};
@@ -37,56 +102,21 @@ module.exports = function(app) {
   plugin.id = PLUGIN_ID;
   plugin.name = PLUGIN_NAME;
   plugin.description = PLUGIN_DESCRIPTION;
+  plugin.schema = PLUGIN_SCHEMA;
+  plugin.uiSchema = PLUGIN_UISCHEMA;
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   const notification = new Notification(app, plugin.id);
-  const expressionParser = new ExpressionParser({
-    "operand": {
-                 "arity": 1,
-                 "precedence": 0,
-                 "parser": function(t) {
-                   app.debug("Executing operand parser on term %s", t);
-                   return(parseTerm(t, true).stream);
-                 }
-               },
-    "not":     {
-                 "arity": 1,
-                 "precedence": 3,
-                 "parser": function(s) {
-                   app.debug("Executing NOT function on term %d", s);
-                   return((s == 0)?1:0);
-                 }
-               },
-    "and":     {
-                 "arity": 2,
-                 "precedence": 2,
-                 "parser": function(s1,s2) {
-                   app.debug("Executing AND function on %d %d", s1, s2);
-                   return(bacon.combineWith((a,b) => ((a == 1) && (b == 1))?1:0, [s1, s2]));
-                 }
-               },
-    "or":      {
-                 "arity": 2,
-                 "precedence": 1,
-                 "parser": function(s1,s2) {
-                   app.debug("Executing OR function on %d %d", s1, s2);
-                   return(bacon.combineWith((a,b) => ((a == 1) || (b == 1))?1:0, [s1, s2]));
-                 }
-               }
-  });
-
-  plugin.schema = function() {
-    var schema = Schema.createSchema(PLUGIN_SCHEMA_FILE);
-    return(schema.getSchema());
-  };
-
-  plugin.uiSchema = function() {
-    var schema = Schema.createSchema(PLUGIN_UISCHEMA_FILE);
-    return(schema.getSchema());
-  }
+  const expressionParser = new ExpressionParser(EXPRESSION_PARSER);
 
   plugin.start = function(options) {
-    if ((options) && (options.rules)) {
+    if (Object.keys(options).length === 0) {
+      options = OPTIONS_DEFAULT;
+      app.savePluginOptions(options, () => { log.N("installing default configuration"); });
+    }
+
+    if ((options.rules) && (Array.isArray(options.rules))) {
+      
       log.N("operating %d rule%s", options.rules.length, (options.rules.length == 1)?"":"s");
 
       unsubscribes = (options.rules || []).reduce((a, rule) => {
@@ -142,13 +172,13 @@ module.exports = function(app) {
         return(a);
       }, []);
     } else {
-      log.N("missing configuration file");
+      log.N("bad or missing configuration file");
     }
   }
 
   plugin.stop = function() {
-	unsubscribes.forEach(f => f());
-	unsubscribes = [];
+	  unsubscribes.forEach(f => f());
+	  unsubscribes = [];
   }
 
   /********************************************************************
@@ -253,24 +283,6 @@ module.exports = function(app) {
       if (retval.stream) retval.stream = retval.stream.filter((v) => ((!isNaN(v)) && ((v == 0) || (v == 1)))).skipDuplicates();
     }
     return(retval);
-  }
-
-  /********************************************************************
-   * Return a delta from <pairs> which can be a single value of the
-   * form { path, value } or an array of such values. <src> gives the
-   * name of the issuing entity.
-   */
-
-  function makeDelta(src, pairs = []) {
-    pairs = (Array.isArray(pairs))?pairs:[pairs]; 
-    return({
-      "updates": [{
-        "source": { "type": "plugin", "src": ((src)?src:"anon"), },
-        "timestamp": (new Date()).toISOString(),
-        "values": pairs.map(p => { return({ "path": p.path, "value": p.value }); }) 
-      }]
-    });
-    console.log("%o", retval);
   }
 
   return(plugin);
