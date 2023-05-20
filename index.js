@@ -56,8 +56,6 @@ const OPTIONS_DEFAULT = {
   ]
 }
 
-
-
 module.exports = function(app) {
   
   const EXPRESSION_PARSER = {
@@ -97,7 +95,6 @@ module.exports = function(app) {
 
   var plugin = {};
   var unsubscribes = [];
-  var switchbanks = {};
 
   plugin.id = PLUGIN_ID;
   plugin.name = PLUGIN_NAME;
