@@ -3,26 +3,25 @@
   "version": "1.0.0",
   "description": "Apply binary logic over Signal K switch and notification states.",
   "main": "index.js",
+  "signalk-plugin-enabled-by-default": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/preeve9534/pdjr-skplugin-switchlogic.git"
+    "url": "git+https://github.com/pdjr-signalk/pdjr-skplugin-switchlogic.git"
   },
   "keywords": [
     "signalk-node-server-plugin",
-    "signalk",
-    "switch",
-    "logic",
-    "plugin"
+    "signalk-category-notifications",
+    "signalk-category-utility"
   ],
   "author": "Paul Reeve <preeve@pdjr.eu>",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/preeve9534/pdjr-skplugin-switchlogic/issues"
+    "url": "https://github.com/pdjr-signalk/pdjr-skplugin-switchlogic/issues"
   },
-  "homepage": "https://github.com/preeve9534/pdjr-skplugin-switchlogic#readme",
+  "homepage": "https://github.com/pdjr-signalk/pdjr-skplugin-switchlogic#readme",
   "dependencies": {
     "baconjs": "^1.0.1",
     "sprintf-js": "^1.1.2",
