@@ -15,7 +15,6 @@
  */
 
 const bacon = require('baconjs');
-
 const Log = require("./lib/signalk-liblog/Log.js");
 const Notification = require("./lib/signalk-libnotification/Notification.js");
 const ExpressionParser = require("./lib/expression-parser/ExpressionParser.js");
@@ -56,42 +55,7 @@ const OPTIONS_DEFAULT = {
   ]
 }
 
-module.exports = function(app) {
-  
-  const EXPRESSION_PARSER = {
-  "operand": {
-    "arity": 1,
-    "precedence": 0,
-    "parser": function(t) {
-      app.debug("Executing operand parser on term %s", t);
-      return(parseTerm(t, true).stream);
-    }
-  },
-  "not": {
-    "arity": 1,
-    "precedence": 3,
-    "parser": function(s) {
-      app.debug("Executing NOT function on term %d", s);
-      return((s === 0)?1:0);
-    }
-  },
-  "and": {
-    "arity": 2,
-    "precedence": 2,
-    "parser": function(s1,s2) {
-      app.debug("Executing AND function on %d %d", s1, s2);
-      return(bacon.combineWith((a,b) => ((a === 1) && (b === 1))?1:0, [s1, s2]));
-    }
-  },
-  "or": {
-    "arity": 2,
-    "precedence": 1,
-    "parser": function(s1,s2) {
-      app.debug("Executing OR function on %d %d", s1, s2);
-      return(bacon.combineWith((a,b) => ((a === 1) || (b === 1))?1:0, [s1, s2]));
-    }
-  }
-  };
+module.exports = function(app) {  
 
   var plugin = {};
   var unsubscribes = [];
@@ -104,7 +68,40 @@ module.exports = function(app) {
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   const notification = new Notification(app, plugin.id);
-  const expressionParser = new ExpressionParser(EXPRESSION_PARSER);
+  const expressionParser = new ExpressionParser({
+    "operand": {
+      "arity": 1,
+      "precedence": 0,
+      "parser": function(t) {
+        app.debug("Executing operand parser on term %s", t);
+        return(parseTerm(t, true).stream);
+      }
+    },
+    "not": {
+      "arity": 1,
+      "precedence": 3,
+      "parser": function(s) {
+        app.debug("Executing NOT function on term %d", s);
+        return((s === 0)?1:0);
+      }
+    },
+    "and": {
+      "arity": 2,
+      "precedence": 2,
+      "parser": function(s1,s2) {
+        app.debug("Executing AND function on %d %d", s1, s2);
+        return(bacon.combineWith((a,b) => ((a === 1) && (b === 1))?1:0, [s1, s2]));
+      }
+    },
+    "or": {
+      "arity": 2,
+      "precedence": 1,
+      "parser": function(s1,s2) {
+        app.debug("Executing OR function on %d %d", s1, s2);
+        return(bacon.combineWith((a,b) => ((a === 1) || (b === 1))?1:0, [s1, s2]));
+      }
+    }
+  });
 
   plugin.start = function(options) {
     if (Object.keys(options).length === 0) {
@@ -122,9 +119,9 @@ module.exports = function(app) {
         var output = parseTerm(rule.output, true);
         if ((input !== null) && (output !== null) && (output.stream !== null)) {
           app.debug("enabling %o", rule);
-          a.push(bacon.combineWith(function(iv,ov) { return((iv == ov)?-1:((iv > ov)?1:0)); }, [ input, output.stream ]).onValue(action => {
-            if (action != -1) {
-              log.N("switching " + description + " " + ((action)?"ON":"OFF"));
+          a.push(bacon.combineWith(function(iv, ov) { return((iv > ov)?1:((ov > iv)?0:-1)); }, [ input, output.stream ]).onValue(action => {
+            if (action !== -1) {
+              log.N("switching " + description + " " + ((action === 1)?"ON":"OFF"));
               switch (output.type) {
                 case "switch":
                   var path = "electrical.switches." + ((output.instance === undefined)?"":("bank." + output.instance + ".")) + output.channel;
