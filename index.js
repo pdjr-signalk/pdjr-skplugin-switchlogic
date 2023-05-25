@@ -117,6 +117,8 @@ module.exports = function(app) {
       unsubscribes = (options.rules || []).reduce((a, rule) => {
         var description = rule.description || "";
         var outputTermObject = new TermObject(rule.output);
+        app.debug("outputTermObject = " + JSON.stringify(outputTermObject));
+        
         var inputStream = expressionParser.parseExpression(rule.input);
         var outputStream = outputTermObject.getStream(app, bacon);
 
