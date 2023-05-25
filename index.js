@@ -75,7 +75,7 @@ module.exports = function(app) {
       "precedence": 0,
       "parser": function(t) {
         app.debug("Executing operand parser on term %s", t);
-        return((new TermObject(t)).getStream());
+        return((new TermObject(t)).getStream(app, bacon));
       }
     },
     "not": {
@@ -118,7 +118,7 @@ module.exports = function(app) {
         var description = rule.description || "";
         var outputTermObject = new TermObject(rule.output);
         var inputStream = expressionParser.parseExpression(rule.input);
-        var outputStream = outputTermObject.getStream();
+        var outputStream = outputTermObject.getStream(app, bacon);
 
         if ((inputStream) && (outputStream)) {
           app.debug("enabling %o", rule);
