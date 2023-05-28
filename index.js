@@ -112,12 +112,12 @@ module.exports = function(app) {
 
     if ((options.rules) && (Array.isArray(options.rules))) {
       
-      log.N("operating %d rule%s", options.rules.length, (options.rules.length == 1)?"":"s");
+      log.N("operating %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"), true);
 
       unsubscribes = (options.rules || []).reduce((a, rule) => {
         var description = rule.description || "";
         var outputTermObject = new TermObject(rule.output);
-        app.debug("outputTermObject = " + JSON.stringify(outputTermObject));
+        app.debug(">>>> outputTermObject = " + JSON.stringify(outputTermObject));
         
         var inputStream = expressionParser.parseExpression(rule.input);
         var outputStream = outputTermObject.getStream(app, bacon);
