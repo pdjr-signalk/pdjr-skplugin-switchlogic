@@ -98,7 +98,7 @@ module.exports = function(app) {
         return(s1.combine(s2, (a,b) => (a || b)));
       }
     }
-  });
+  }, app);
 
   plugin.start = function(options) {
     if (Object.keys(options).length === 0) {
