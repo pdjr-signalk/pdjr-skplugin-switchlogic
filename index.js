@@ -111,6 +111,8 @@ module.exports = function(app) {
       log.N("operating %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"), true);
 
       unsubscribes = (options.rules || []).reduce((a, rule) => {
+        log.N("enabling rule %s", rule.description, false);
+
         var description = rule.description || "";
         var outputTermObject = new TermObject(rule.output);
         
@@ -120,7 +122,6 @@ module.exports = function(app) {
         app.debug("input stream = %s, output stream = %s", inputStream, outputStream);
  
         if ((inputStream) && (outputStream)) {
-          log.N("enabling rule %o", rule, false);
           a.push(inputStream.combine(outputStream, function(iv, ov) { 
             if ((iv == 1) && (ov == 0)) return(1);
             if ((iv == 0) && (ov != 0)) return(0);
@@ -128,7 +129,7 @@ module.exports = function(app) {
           }).onValue(action => {
             switch (action) {
               case 0: // Switch output off.
-                log.N("switching " + description + " OFF");
+                log.N("switching %s OFF", rule.description);
                 switch (outputTermObject.type.getName()) {
                   case "switch":
                     var path = "electrical.switches." + ((outputTermObject.instance === undefined)?"":("bank." + outputTermObject.instance + ".")) + outputTermObject.channel + ".state";
@@ -153,7 +154,7 @@ module.exports = function(app) {
                 }
                 break;
               case 1: // Switch output on. 
-                log.N("switching " + description + " ON");
+                log.N("switching %s ON", rule.description);
                 switch (outputTermObject.type.getName()) {
                   case "switch":
                     var path = "electrical.switches." + ((outputTermObject.instance === undefined)?"":("bank." + outputTermObject.instance + ".")) + outputTermObject.channel + ".state";
@@ -181,7 +182,7 @@ module.exports = function(app) {
             }
           }))
         } else {
-          log.W("ignoring badly formed rule %o", rule);
+          log.W("ignoring badly formed rule (%s)", rule.description);
         }
         return(a);
       }, []);
