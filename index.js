@@ -16,7 +16,7 @@
 
 const bacon = require('baconjs');
 const Log = require("./lib/signalk-liblog/Log.js");
-const Notification = require("./lib/signalk-libnotification/Notification.js");
+const Delta = require("./lib/signalk-libdelta/Delta.js");
 const ExpressionParser = require("./lib/expression-parser/ExpressionParser.js");
 const TermObject = require("./lib/term-object/TermObject.js");
 
@@ -68,13 +68,12 @@ module.exports = function(app) {
   plugin.uiSchema = PLUGIN_UISCHEMA;
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
-  const notification = new Notification(app, plugin.id);
+  const delta = new Delta(app, plugin.id);
   const expressionParser = new ExpressionParser({
     "operand": {
       "arity": 1,
       "precedence": 0,
       "parser": function(t) {
-        app.debug("Executing operand parser on term %s", t);
         return((new TermObject(t)).getStream(app, bacon));
       }
     },
@@ -82,24 +81,21 @@ module.exports = function(app) {
       "arity": 1,
       "precedence": 3,
       "parser": function(s) {
-        app.debug("Executing NOT function on term %d", s);
-        return((s === 0)?1:0);
+        return(s.not());
       }
     },
     "and": {
       "arity": 2,
       "precedence": 2,
       "parser": function(s1,s2) {
-        app.debug("Executing AND function on %d %d", s1, s2);
-        return(bacon.combineWith((a,b) => ((a === 1) && (b === 1))?1:0, [s1, s2]));
+        return(s1.combine(s2, (a,b) => (a && b)));
       }
     },
     "or": {
       "arity": 2,
       "precedence": 1,
       "parser": function(s1,s2) {
-        app.debug("Executing OR function on %d %d", s1, s2);
-        return(bacon.combineWith((a,b) => ((a === 1) || (b === 1))?1:0, [s1, s2]));
+        return(s1.combine(s2, (a,b) => (a || b)));
       }
     }
   });
@@ -117,52 +113,71 @@ module.exports = function(app) {
       unsubscribes = (options.rules || []).reduce((a, rule) => {
         var description = rule.description || "";
         var outputTermObject = new TermObject(rule.output);
-        app.debug(">>>> outputTermObject = " + JSON.stringify(outputTermObject));
         
         var inputStream = expressionParser.parseExpression(rule.input);
         var outputStream = outputTermObject.getStream(app, bacon);
-
+        
+        app.debug("input stream = %s, output stream = %s", inputStream, outputStream);
+ 
         if ((inputStream) && (outputStream)) {
-          app.debug("enabling %o", rule);
-          a.push(bacon.combineWith(function(iv, ov) { return((iv > ov)?1:((ov > iv)?0:-1)); }, [ inputStream, outputStream ]).onValue(action => {
-            if (action !== -1) {
-              log.N("switching " + description + " " + ((action === 1)?"ON":"OFF"));
-              switch (outputTermObject.type.getName()) {
-                case "switch":
-                  var path = "electrical.switches." + ((outputTermObject.instance === undefined)?"":("bank." + outputTermObject.instance + ".")) + outputTermObject.channel + ".state";
-                  app.debug("issuing put request (%s <= %s)", path, action);
-                  app.putSelfPath(path, action, (d) => app.debug("put response: %s", d.message));
-                  break;
-                case "notification":
-                  if (action) {
-                    app.debug("issuing notification (%s <= %s)", outputTermObject.path, outputTermObject.state);
-                    notification.issue(outputTermObject.path, outputTermObject.description, output.TermObject.state, outputTermObject.method);
-                  } else {
-                    app.debug("cancelling notification (%s)", outputTermObject.path);
-                    notification.cancel(outputTermObject.path);
-                  }
-                  break;
-                case "path":
-                  if (action) {
-                    if (outputTermObject.onvalue) {
-                      app.debug("issuing put request (%s <= %s)", outputTermObject.path, outputTermObject.onvalue);
-                      app.putSelfPath(outputTermObject.path + ".value", outputTermObject.onvalue, (d) => app.debug("put response: %s", d.message));
-                    } else {
-                      app.debug("cannot issue put request because onvalue is undefined");
-                    }
-                  } else {
+          log.N("enabling rule %o", rule, false);
+          a.push(inputStream.combine(outputStream, function(iv, ov) { 
+            if ((iv == 1) && (ov == 0)) return(1);
+            if ((iv == 0) && (ov != 0)) return(0);
+            return(-1);
+          }).onValue(action => {
+            switch (action) {
+              case 0: // Switch output off.
+                log.N("switching " + description + " OFF");
+                switch (outputTermObject.type.getName()) {
+                  case "switch":
+                    var path = "electrical.switches." + ((outputTermObject.instance === undefined)?"":("bank." + outputTermObject.instance + ".")) + outputTermObject.channel + ".state";
+                    app.debug("issuing put request (%s <= %s)", path, 1);
+                    app.putSelfPath(path, 1, (d) => app.debug("put response: %s", d.message));
+                    break;
+                  case "notification":
+                    app.debug("issuing normal notification on %s", outputTermObject.path,);
+                    delta.addValue(outputTermObject.path, { message: "OFF state", state: "normal", method: [] }).commit().clear();
+                    break;
+                  case "path":
                     if (outputTermObject.offvalue) {
                       app.debug("issuing put request (%s <= %s)", outputTermObject.path, outputTermObject.offvalue);
                       app.putSelfPath(outputTermObject.path + ".value", outputTermObject.offvalue, (d) => app.debug("put response: %s", d.message));
                     } else {
                       app.debug("cannot issue put request because offvalue is undefined");
                     }
-                  }
-                  break;
-                default:
-                  log.E("internal error - bad output type (%s)", description);
-                  break;
-              } 
+                    break;
+                  default:
+                    log.E("internal error - bad output type (%s)", description);
+                    break;
+                }
+                break;
+              case 1: // Switch output on. 
+                log.N("switching " + description + " ON");
+                switch (outputTermObject.type.getName()) {
+                  case "switch":
+                    var path = "electrical.switches." + ((outputTermObject.instance === undefined)?"":("bank." + outputTermObject.instance + ".")) + outputTermObject.channel + ".state";
+                    app.debug("issuing put request (%s <= %s)", path, 0);
+                    app.putSelfPath(path, 0, (d) => app.debug("put response: %s", d.message));
+                    break;
+                  case "notification":
+                    app.debug("issuing alert notification on %s", outputTermObject.path,);
+                    delta.addValue(outputTermObject.path, { message: "ON state", state: "alert", method: [] }).commit().clear();
+                    break;
+                  case "path":
+                    if (outputTermObject.onvalue) {
+                      app.debug("issuing put request (%s <= %s)", outputTermObject.path, outputTermObject.onvalue);
+                      app.putSelfPath(outputTermObject.path + ".value", outputTermObject.onvalue, (d) => app.debug("put response: %s", d.message));
+                    } else {
+                      app.debug("cannot issue put request because onvalue is undefined");
+                    }
+                    break;
+                  default:
+                    log.E("internal error - bad output type (%s)", description);
+                    break;
+                }
+              default:
+                break; 
             }
           }))
         } else {
