@@ -2,25 +2,37 @@
 
 Apply binary logic over Signal K path values.
 
-__pdjr-switchlogic__ allows the user to define a collection of rules
-which will be applied to the Signal K data store.
-Each rule consists of an *input expression* and an *output path*.
+__pdjr-switchlogic__ allows the user to define a collection of *rule*s
+which will peruse the Signal K data store and update it in response to
+path value changes.
+Each *rule* consists of an *input expression* which determines if and
+how an *output path* should be updated.
 
 *input expression* is a boolean expression in which each operand is a
 Signal K data value (identified by its path) or a boolean constant.
-Changes in the value of *input expression* operands are processed
-through the boolean expression and may in an update of the value of
-*output path* to make it conform to the state of *input expression*.
+Changes in the value of variable operands change the value of
+the *input expression* and this results in the value of the *output
+path* being updated in sync.
 
-*outout path* and variable operands in *input expression* are arbitrary
-Signal K paths, but there are special notational forms for switches and
-notifications which simplify the writing of rules and imply the
-mechanism that will be used for updating the *output path* value.
+*outout path* specifies an arbitrary Signal K path, but there are
+special notational forms for switches and notifications which simplify
+the writing of rules.
+The value specified by *output path* can be updated by either a put
+request or a delta update.
 
-By default the plugin issues a put request to update an *output path*
-value, but this default can be substituted by a delta update dependent
-on the notational form used to specify an operand or by an explcit
-override for a particular rule.
+Example 1: Rule to issue a notification when a tank nears full.
+
+{
+   "input": "tanks.wasteWater.0.level":ge:0.8",
+   "output": "notifications.wasteWater.0.level:alert::Waste tank at 90% capacity"
+}
+
+Example 2: Operate an output relay when a switch is turned on.
+
+{
+   "input": "[0,1]",
+   "output": "[10,7]"
+}
 
 With appropriate supporting put handlers the plugin provides a generic
 solution to the problem of doing something when a state change happens
@@ -29,26 +41,7 @@ pressed.
 [pdjr-skplugin-switchbank](https://github.com/preeve9534/pdjr-skplugin-switchbank)
 implements a put handler for operating NMEA 2000 relay output switchbanks.
 
-## System requirements
-
-__pdjr-skplugin-switchlogic__ has no special installation requirements.
-
-## Installation
-
-Download and install __pdjr-skplugin-switchlogic__ using the "Appstore" menu
-option in your Signal K Node server console.
-The plugin can also be obtained from the 
-[project homepage](https://github.com/preeve9534/pdjr-skplugin-switchlogic)
-and installed using
-[these instructions](https://github.com/SignalK/signalk-server-node/blob/master/SERVERPLUGINS.md).
-
-## Using the plugin
-
-__pdjr-skplugin-switchlogic__ operates autonomously, but must be configured
-before use.
-
-The plugin configuration is stored in the file 'switchlogic.json' and
-can be maintained using the Signal K plugin configuration GUI.
+## Configuration
 
 The configuration consists of a collection of *rule definitions* each
 of which specifies an input condition that determines an output state.

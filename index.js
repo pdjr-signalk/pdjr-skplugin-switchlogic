@@ -145,7 +145,11 @@ module.exports = function(app) {
                     break;
                   case "notification":
                     if (outputTermObject.offstate) {
-                      value = { message: "OFF state", state: outputTermObject.offstate, method: [] };
+                      value = {
+                        message: (outputTermObject.message)?(outputTermObject.message + " (OFF)"):"OFF state",
+                        state: (outputTermObject.offstate)?outputTermObject.offstate:"normal",
+                        method: (outputTermObject.method)?outputTermObject.method:[]
+                      };
                     } else {
                       value = null;
                     }
@@ -165,11 +169,11 @@ module.exports = function(app) {
                     value = 1;
                     break;
                   case "notification":
-                    if (outputTermObject.onstate) {
-                      value = { message: "ON state", state: outputTermObject.onstate, method: [] };
-                    } else {
-                      value = null;
-                    }
+                    value = {
+                      message: (outputTermObject.message)?(outputTermObject.message + " (ON)"):"ON state",
+                      state: (outputTermObject.onstate)?outputTermObject.onstate:"normal",
+                      method: (outputTermObject.method)?outputTermObject.method:[]
+                    };
                     break;
                   case "path":
                     value = (outputTermObject.offvalue)?outputTermObject.offvalue:1;
