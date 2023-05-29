@@ -26,6 +26,12 @@ const PLUGIN_DESCRIPTION = "Apply binary logic over Signal K path values";
 const PLUGIN_SCHEMA = {
   "type": "object",
   "properties": {
+    "methodOverrides" : {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "rules": {
       "title": "Rule definitions",
       "type": "array",
@@ -52,6 +58,7 @@ const PLUGIN_SCHEMA = {
 const PLUGIN_UISCHEMA = {};
 
 const OPTIONS_DEFAULT = {
+  "methodOverrides": [ "notifications", "path" ],
   "rules": [
   ]
 }
@@ -120,6 +127,7 @@ module.exports = function(app) {
         log.N("enabling rule %s", rule.description, false);
 
         var description = rule.description || "";
+        var value = null;
         var outputTermObject = new TermObject(rule.output);
         
         var inputStream = expressionParser.parseExpression(rule.input);
@@ -138,24 +146,16 @@ module.exports = function(app) {
                 log.N("switching %s OFF", rule.description);
                 switch (outputTermObject.type.getName()) {
                   case "switch":
-                    var path = "electrical.switches." + ((outputTermObject.instance === undefined)?"":("bank." + outputTermObject.instance + ".")) + outputTermObject.channel + ".state";
-                    app.debug("issuing put request (%s <= %s)", path, 0);
-                    app.putSelfPath(path, 0, (d) => app.debug("put response: %s", d.message));
+                    value = 0;
                     break;
                   case "notification":
-                    app.debug("issuing normal notification on %s", outputTermObject.path,);
-                    delta.addValue(outputTermObject.path, { message: "OFF state", state: "normal", method: [] }).commit().clear();
+                    value = { message: "OFF state", state: "normal", method: [] };
                     break;
                   case "path":
-                    if (outputTermObject.offvalue) {
-                      app.debug("issuing put request (%s <= %s)", outputTermObject.path, outputTermObject.offvalue);
-                      app.putSelfPath(outputTermObject.path + ".value", outputTermObject.offvalue, (d) => app.debug("put response: %s", d.message));
-                    } else {
-                      app.debug("cannot issue put request because offvalue is undefined");
-                    }
+                    value = (outputTermObject.offvalue)?outputTermObject.offvalue:0;
                     break;
                   default:
-                    log.E("internal error - bad output type (%s)", description);
+                    log.E("internal error - bad output type (%s) on rule %s", outputTermObject.type.getName(), description);
                     break;
                 }
                 break;
@@ -163,28 +163,31 @@ module.exports = function(app) {
                 log.N("switching %s ON", rule.description);
                 switch (outputTermObject.type.getName()) {
                   case "switch":
-                    var path = "electrical.switches." + ((outputTermObject.instance === undefined)?"":("bank." + outputTermObject.instance + ".")) + outputTermObject.channel + ".state";
-                    app.debug("issuing put request (%s <= %s)", path, 1);
-                    app.putSelfPath(path, 1, (d) => app.debug("put response: %s", d.message));
+                    value = 1;
                     break;
                   case "notification":
-                    app.debug("issuing alert notification on %s", outputTermObject.path,);
-                    delta.addValue(outputTermObject.path, { message: "ON state", state: "alert", method: [] }).commit().clear();
+                    value = { message: "ON state", state: "alert", method: [] };
                     break;
                   case "path":
-                    if (outputTermObject.onvalue) {
-                      app.debug("issuing put request (%s <= %s)", outputTermObject.path, outputTermObject.onvalue);
-                      app.putSelfPath(outputTermObject.path + ".value", outputTermObject.onvalue, (d) => app.debug("put response: %s", d.message));
-                    } else {
-                      app.debug("cannot issue put request because onvalue is undefined");
-                    }
+                    value = (outputTermObject.offvalue)?outputTermObject.offvalue:1;
                     break;
                   default:
-                    log.E("internal error - bad output type (%s)", description);
+                    log.E("internal error - bad output type (%s) on rule %s", outputTermObject.type.getName(), description);
                     break;
                 }
               default:
                 break; 
+            }
+            if (outputTermObject.path) {
+              if (options.methodOverrides.includes(outputTermObject.type.getName())) {
+                app.debug("issuing delta update (%s <= %s)", outputTermObject.path, value);
+                delta.addValue(outputTermObject.path, value).commit().clear();
+              } else {
+                app.debug("issuing put request (%s <= %s)", outputTermObject.path, value);
+                app.putSelfPath(outputTermObject.path, value, (d) => app.debug("put response: %s", d.message));
+              }
+            } else {
+              log.E("problem parsing output path");
             }
           }))
         } else {

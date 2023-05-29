@@ -2,26 +2,25 @@
 
 Apply binary logic over Signal K path values.
 
-This project implements a plugin for the
-[Signal K Node server](https://github.com/SignalK/signalk-server-node).
-
 __pdjr-switchlogic__ allows the user to define a collection of rules
 which will be applied to the Signal K data store.
 Each rule consists of an *input expression* and an *output path*.
 
-*input expression* is a boolean expression in which each variable operand
-is a Signal K data value identified by its path.
-Changes in the value of *input expression* trigger either a delta update
-(if *output path* is in the 'notifications...' tree), or, more generally,
-a put request targetted at *output path*.
-A delta update is used to create a notification if *input expression*
-becomes true and otherwise to cancel it.
-A put request can be passed either the value of *input expression* or
-some specified substitute.
+*input expression* is a boolean expression in which each operand is a
+Signal K data value (identified by its path) or a boolean constant.
+Changes in the value of *input expression* operands are processed
+through the boolean expression and may in an update of the value of
+*output path* to make it conform to the state of *input expression*.
 
-Arbitrary, bespoke, put handlers can be used to implement whatever action
-is required when a put request is made to change the value of an *output path*
-(including not changing the path value at all).
+*outout path* and variable operands in *input expression* are arbitrary
+Signal K paths, but there are special notational forms for switches and
+notifications which simplify the writing of rules and imply the
+mechanism that will be used for updating the *output path* value.
+
+By default the plugin issues a put request to update an *output path*
+value, but this default can be substituted by a delta update dependent
+on the notational form used to specify an operand or by an explcit
+override for a particular rule.
 
 With appropriate supporting put handlers the plugin provides a generic
 solution to the problem of doing something when a state change happens
