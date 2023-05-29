@@ -88,14 +88,20 @@ module.exports = function(app) {
       "arity": 2,
       "precedence": 2,
       "parser": function(s1,s2) {
-        return(s1.combine(s2, (a,b) => (a && b)));
+        return(s1.combine(s2, (a,b) => {
+          app.debug("and-ing %d and %d", a, b);
+          return(a && b);
+        }));
       }
     },
     "or": {
       "arity": 2,
       "precedence": 1,
       "parser": function(s1,s2) {
-        return(s1.combine(s2, (a,b) => (a || b)));
+        return(s1.combine(s2, (a,b) => {
+          app.debug("or-ing %d and %d", a, b);
+          return(a || b);
+        }));
       }
     }
   }, app);
