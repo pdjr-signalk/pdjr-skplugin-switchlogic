@@ -149,7 +149,11 @@ module.exports = function(app) {
                     value = 0;
                     break;
                   case "notification":
-                    value = { message: "OFF state", state: "normal", method: [] };
+                    if (outputTermObject.offstate) {
+                      value = { message: "OFF state", state: outputTermObject.offstate, method: [] };
+                    } else {
+                      value = null;
+                    }
                     break;
                   case "path":
                     value = (outputTermObject.offvalue)?outputTermObject.offvalue:0;
@@ -166,7 +170,11 @@ module.exports = function(app) {
                     value = 1;
                     break;
                   case "notification":
-                    value = { message: "ON state", state: "alert", method: [] };
+                    if (outputTermObject.onstate) {
+                      value = { message: "ON state", state: outputTermObject.onstate, method: [] };
+                    } else {
+                      value = null;
+                    }
                     break;
                   case "path":
                     value = (outputTermObject.offvalue)?outputTermObject.offvalue:1;
@@ -180,7 +188,7 @@ module.exports = function(app) {
             }
             if (outputTermObject.path) {
               if (options.methodOverrides.includes(outputTermObject.type.getName())) {
-                app.debug("issuing delta update (%s <= %s)", outputTermObject.path, value);
+                app.debug("issuing delta update (%s <= %s)", outputTermObject.path, (value)?value:"cancel");
                 delta.addValue(outputTermObject.path, value).commit().clear();
               } else {
                 app.debug("issuing put request (%s <= %s)", outputTermObject.path, value);
