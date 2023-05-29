@@ -139,8 +139,8 @@ module.exports = function(app) {
                 switch (outputTermObject.type.getName()) {
                   case "switch":
                     var path = "electrical.switches." + ((outputTermObject.instance === undefined)?"":("bank." + outputTermObject.instance + ".")) + outputTermObject.channel + ".state";
-                    app.debug("issuing put request (%s <= %s)", path, 1);
-                    app.putSelfPath(path, 1, (d) => app.debug("put response: %s", d.message));
+                    app.debug("issuing put request (%s <= %s)", path, 0);
+                    app.putSelfPath(path, 0, (d) => app.debug("put response: %s", d.message));
                     break;
                   case "notification":
                     app.debug("issuing normal notification on %s", outputTermObject.path,);
@@ -164,8 +164,8 @@ module.exports = function(app) {
                 switch (outputTermObject.type.getName()) {
                   case "switch":
                     var path = "electrical.switches." + ((outputTermObject.instance === undefined)?"":("bank." + outputTermObject.instance + ".")) + outputTermObject.channel + ".state";
-                    app.debug("issuing put request (%s <= %s)", path, 0);
-                    app.putSelfPath(path, 0, (d) => app.debug("put response: %s", d.message));
+                    app.debug("issuing put request (%s <= %s)", path, 1);
+                    app.putSelfPath(path, 1, (d) => app.debug("put response: %s", d.message));
                     break;
                   case "notification":
                     app.debug("issuing alert notification on %s", outputTermObject.path,);
