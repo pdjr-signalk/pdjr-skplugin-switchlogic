@@ -114,11 +114,6 @@ module.exports = function(app) {
   }, app);
 
   plugin.start = function(options) {
-    if (Object.keys(options).length === 0) {
-      options = OPTIONS_DEFAULT;
-      app.savePluginOptions(options, () => { log.N("installing default configuration"); });
-    }
-
     if ((options.rules) && (Array.isArray(options.rules))) {
       
       log.N("operating %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"), true);
@@ -204,7 +199,7 @@ module.exports = function(app) {
         return(a);
       }, []);
     } else {
-      log.N("bad or missing configuration file");
+      log.E("missing, bad or empty configuration file");
     }
   }
 
