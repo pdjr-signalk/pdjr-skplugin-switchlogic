@@ -3,21 +3,39 @@
 Apply binary logic over Signal K path values.
 
 __pdjr-switchlogic__ allows the user to define a collection of *rule*s
-which will peruse the Signal K data store and update it in response to
-path value changes.
+which monitor the Signal K data store and update it in response to
+changes in path values.
 
-Each *rule* consists of a binary *input* expression which computes the
-state of some *output* path.
+Each *rule* consists of a binary *input* expression whose value is
+continuously computed and used to determine the value of some *output*
+path.
+
 Variable operands in *input* expression are data values identified by
-their Signal K path and changes in the value of an operand are
-immediately reflected in the value of *input* expression.
-If the value of *input* expression changes, then the value referenced
-by *output* path is updated using either put or delta update methods.
+their Signal K path.
+Operand values must be inherently binary (like, for example, keys under
+'electrical.switches.') or be able to be converted into a binary value.
+Special support is provided for handling keys in the 'notifications.'
+tree such that binary values can be derived from either the presence or
+absence of a notification *per-se* or from the presence or absence of a
+particular notification state.
+In general, the value of keys under any path can be tested with a range
+of comparators and so reduced to a boolean.
 
-There are three notational styles ('path', 'notification' and 'switch')
-which can be used to specify operands in both *input* and *output* and
-the plugin can be configured to associate a particular default update
-method with each style.
+The *output* path can reference any key and special handling is provided
+to convert boolean states into notifications.
+New values can be assigned to *output* keys using either Signal K's put
+or delta methods.
+
+The plugin defaults to using delta updates for all outputs, but this
+can be overriden based on output path root or at the level of an
+individual rule.
+On my ship for example I provide put handlers for all relay outputs and
+hence override delta output for all paths under 'electrical.switches.'
+
+The plugin provides a generic solution to the problem of doing something
+when a state change happens in Signal K.
+
+The following examples illustrate the basics.
 
 #### Example 1: Make a relay track the value of a switch
 ```
@@ -50,9 +68,8 @@ and the 'notification' notation to raise an alert notification.
    "output": "[10.3]"
 }
 ```
+This example uses a more complex input expression.
 
-The plugin provides a generic solution to the problem of doing something
-when a state change happens in Signal K.
 
 [pdjr-skplugin-switchbank](https://github.com/preeve9534/pdjr-skplugin-switchbank)
 implements a put handler for operating NMEA 2000 relay output switchbanks.

@@ -26,7 +26,7 @@ const PLUGIN_DESCRIPTION = "Apply binary logic over Signal K path values";
 const PLUGIN_SCHEMA = {
   "type": "object",
   "properties": {
-    "methodOverrides" : {
+    "usePut" : {
       "type": "array",
       "items": {
         "type": "string"
@@ -58,7 +58,7 @@ const PLUGIN_SCHEMA = {
 const PLUGIN_UISCHEMA = {};
 
 const OPTIONS_DEFAULT = {
-  "methodOverrides": [ "notifications", "path" ],
+  "put": [ "electrical.switches." ],
   "rules": [
   ]
 }
@@ -124,6 +124,7 @@ module.exports = function(app) {
         var description = rule.description || "";
         var value = null;
         var outputTermObject = new TermObject(rule.output);
+        var usePut = ((options.usePut.reduce((a,prefix) => (a || outputTermObject.path.startsWith(prefix)), false)) || (rule.usePut === true));
         
         var inputStream = expressionParser.parseExpression(rule.input);
         var outputStream = outputTermObject.getStream(app, bacon);
@@ -186,7 +187,7 @@ module.exports = function(app) {
                 break; 
             }
             if (outputTermObject.path) {
-              if (options.methodOverrides.includes(outputTermObject.type.getName())) {
+              if (!usePut) {
                 app.debug("issuing delta update (%s <= %s)", outputTermObject.path, (value)?value:"cancel");
                 delta.addValue(outputTermObject.path, value).commit().clear();
               } else {
