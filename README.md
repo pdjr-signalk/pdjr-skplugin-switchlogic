@@ -5,34 +5,55 @@ Apply binary logic over Signal K path values.
 __pdjr-switchlogic__ allows the user to define a collection of *rule*s
 which will peruse the Signal K data store and update it in response to
 path value changes.
-Each *rule* consists of an *input expression* which determines if and
-how an *output path* should be updated.
 
-*input expression* is a boolean expression in which each operand is a
-Signal K data value (identified by its path) or a boolean constant.
-Changes in the value of variable operands change the value of
-the *input expression* and this results in the value of the *output
-path* being updated in sync.
+Each *rule* consists of a binary *input* expression which computes the
+state of some *output* path.
+Variable operands in *input* expression are data values identified by
+their Signal K path and changes in the value of an operand are
+immediately reflected in the value of *input* expression.
+If the value of *input* expression changes, then the value referenced
+by *output* path is updated; the plugin supports both put (the default)
+and delta update methods.
 
-*outout path* specifies an arbitrary Signal K path, but there are
-special notational forms for switches and notifications which simplify
-the writing of rules.
-The value specified by *output path* can be updated by either a put
-request or a delta update.
+A handful of short forms can be used to specify a Signal K path in
+both *input* and *output*.
 
-Example 1: Rule to issue a notification when a tank nears full.
-
+#### Example 1: Make a relay track the value of a switch
+```
 {
-   "input": "tanks.wasteWater.0.level":ge:0.8",
-   "output": "notifications.wasteWater.0.level:alert::Waste tank at 90% capacity"
+  "description": "Anchor light",
+  "input": "[0,1]",
+  "output": "[10,7]"
 }
+```
+Here, 'switch' notation is used to specify switch on path
+'electrical.switches.bank.0.1.state' and a relay on
+'electrical.switches.bank.10.7.state'.
 
-Example 2: Operate an output relay when a switch is turned on.
+Typically the physical switch and relay devices might be interfaced
+through NMEA 2000 switch bank modules and the relay operated by a put
+handler installed in Signal K by some other plugin.
 
+#### Example 2: Raise an alert notification when a tank nears full
+```
 {
-   "input": "[0,1]",
-   "output": "[10,7]"
+   "description": "Waste tank full notification",
+   "input": "tanks.wasteWater.0.level":ge:0.85",
+   "output": "notifications.wasteWater.0.level:alert::Waste tank at 85% capacity:sound,visual"
 }
+```
+This example uses the'path' notation to test the value of a tank level
+and the 'notification' notation to raise an alert notification.
+
+#### Example 3: Operate an output relay when a tank alert notification is
+raised, but only if some switch is also off.
+```
+{
+   "description": "Illuminate waste tank full indicator",
+   "input": "(not [0,12]) and notifications.wasteWater.0.level:alert",
+   "output": "[10.3]"
+}
+```
 
 With appropriate supporting put handlers the plugin provides a generic
 solution to the problem of doing something when a state change happens
