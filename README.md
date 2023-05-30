@@ -12,8 +12,7 @@ Variable operands in *input* expression are data values identified by
 their Signal K path and changes in the value of an operand are
 immediately reflected in the value of *input* expression.
 If the value of *input* expression changes, then the value referenced
-by *output* path is updated; the plugin supports both put (the default)
-and delta update methods.
+by *output* path is updated using either put or delta update methods.
 
 A handful of short forms can be used to specify a Signal K path in
 both *input* and *output*.
