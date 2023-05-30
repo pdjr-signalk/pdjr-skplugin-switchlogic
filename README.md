@@ -14,8 +14,10 @@ immediately reflected in the value of *input* expression.
 If the value of *input* expression changes, then the value referenced
 by *output* path is updated using either put or delta update methods.
 
-A handful of short forms can be used to specify a Signal K path in
-both *input* and *output*.
+There are three notational styles ('path', 'notification' and 'switch')
+which can be used to specify operands in both *input* and *output* and
+the plugin can be configured to associate a particular default update
+method with each style.
 
 #### Example 1: Make a relay track the value of a switch
 ```
@@ -29,15 +31,11 @@ Here, 'switch' notation is used to specify a switch on path
 'electrical.switches.bank.0.1.state' and a relay on
 'electrical.switches.bank.10.7.state'.
 
-Typically the physical switch and relay devices might be interfaced
-through NMEA 2000 switch bank modules and the relay operated by a put
-handler installed in Signal K by some other plugin.
-
 #### Example 2: Raise an alert notification when a tank nears full
 ```
 {
    "description": "Waste tank full notification",
-   "input": "tanks.wasteWater.0.level":ge:0.85",
+   "input": "tanks.wasteWater.0.level:ge:0.85",
    "output": "notifications.wasteWater.0.level:alert::Waste tank at 85% capacity:sound,visual"
 }
 ```
@@ -48,16 +46,15 @@ and the 'notification' notation to raise an alert notification.
 raised, but only if some switch is also off.
 ```
 {
-   "description": "Illuminate waste tank full indicator",
+   "description": "Sound waste tank full alarm",
    "input": "(not [0,12]) and notifications.wasteWater.0.level:alert",
    "output": "[10.3]"
 }
 ```
 
-With appropriate supporting put handlers the plugin provides a generic
-solution to the problem of doing something when a state change happens
-in Signal K: perhaps as simple as operating a relay when a switch is
-pressed.
+The plugin provides a generic solution to the problem of doing something
+when a state change happens in Signal K.
+
 [pdjr-skplugin-switchbank](https://github.com/preeve9534/pdjr-skplugin-switchbank)
 implements a put handler for operating NMEA 2000 relay output switchbanks.
 
