@@ -49,11 +49,17 @@ const PLUGIN_SCHEMA = {
           "description": {
             "title": "Description",
             "type": "string"
+          },
+          "usePut": {
+            "title": "Update output via a put request rather than a delta",
+            "type": "boolean"
           }
-        }
+        },
+        "required": [ "input", "output" ]
       }
     }
   },
+  "required": [ "usePut", "rules" ],
   "default": {
     "usePut": [ "electrical.switches." ],
     "rules": []
