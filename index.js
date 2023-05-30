@@ -53,15 +53,13 @@ const PLUGIN_SCHEMA = {
         }
       }
     }
+  },
+  "default": {
+    "usePut": [ "electrical.switches." ],
+    "rules": []
   }
 };
 const PLUGIN_UISCHEMA = {};
-
-const OPTIONS_DEFAULT = {
-  "put": [ "electrical.switches." ],
-  "rules": [
-  ]
-}
 
 module.exports = function(app) {  
 
@@ -114,9 +112,14 @@ module.exports = function(app) {
   }, app);
 
   plugin.start = function(options) {
-    if ((options.rules) && (Array.isArray(options.rules))) {
+    if (!options) {
+      options = plugin.schema.default;
+      log.N("using default configuration", false);
+    }
+
+    if ((options.rules) && (Array.isArray(options.rules)) && (options.rules.length > 0)) {
       
-      log.N("operating %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"), true);
+      log.N("started: operating %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"), true);
 
       unsubscribes = (options.rules || []).reduce((a, rule) => {
         log.N("enabling rule %s", rule.description, false);
@@ -204,7 +207,7 @@ module.exports = function(app) {
         return(a);
       }, []);
     } else {
-      log.E("missing, bad or empty configuration file");
+      log.N("stopped: no rules are defined");
     }
   }
 
