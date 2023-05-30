@@ -42,8 +42,7 @@ Here, 'switch' notation is used to specify a switch on path
 This example uses the'path' notation to test the value of a tank level
 and the 'notification' notation to raise an alert notification.
 
-#### Example 3: Operate an output relay when a tank alert notification is
-raised, but only if some switch is also off.
+#### Example 3: Operate an output relay when a tank alert notification is raised, but only if some switch is also off.
 ```
 {
    "description": "Sound waste tank full alarm",
