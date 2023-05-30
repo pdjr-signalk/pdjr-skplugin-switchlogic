@@ -25,7 +25,7 @@ both *input* and *output*.
   "output": "[10,7]"
 }
 ```
-Here, 'switch' notation is used to specify switch on path
+Here, 'switch' notation is used to specify a switch on path
 'electrical.switches.bank.0.1.state' and a relay on
 'electrical.switches.bank.10.7.state'.
 
