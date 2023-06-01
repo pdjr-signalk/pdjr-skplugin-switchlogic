@@ -127,13 +127,13 @@ module.exports = function(app) {
       
       log.N("started: operating %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"), true);
 
-      unsubscribes = (options.rules || []).reduce((a, rule) => {
+      unsubscribes = (options.rules.filter((rule) => (rule.output != "")) || []).reduce((a, rule) => {
         log.N("enabling rule %s", rule.description, false);
 
         var description = rule.description || "";
         var value = null;
         var outputTermObject = new TermObject(rule.output);
-        var usePut = ((options.usePut.reduce((a,prefix) => (a || outputTermObject.path.startsWith(prefix)), false)) || (rule.usePut === true));
+        var usePut = ((options.usePut.reduce((a,prefix) => (a || ((outputTermObject.path) && (outputTermObject.path.startsWith(prefix)))), false)) || (rule.usePut === true));
         
         var inputStream = expressionParser.parseExpression(rule.input);
         var outputStream = outputTermObject.getStream(app, bacon);
@@ -204,7 +204,7 @@ module.exports = function(app) {
                 app.putSelfPath(outputTermObject.path, value, (d) => app.debug("put response: %s", d.message));
               }
             } else {
-              log.E("problem parsing output path");
+              log.E("problem parsing output path (%o)", rule);
             }
           }))
         } else {
