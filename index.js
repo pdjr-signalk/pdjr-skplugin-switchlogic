@@ -195,7 +195,7 @@ module.exports = function(app) {
               default:
                 break; 
             }
-            if (outputTermObject.path) {
+            if ((outputTermObject.path) && (value)) {
               if (!usePut) {
                 app.debug("issuing delta update (%s <= %s)", outputTermObject.path, (value)?value:"cancel");
                 delta.addValue(outputTermObject.path, value).commit().clear();
