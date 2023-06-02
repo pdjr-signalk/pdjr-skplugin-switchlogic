@@ -127,13 +127,12 @@ module.exports = function(app) {
       
       log.N("started: operating %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"), true);
 
-      unsubscribes = (options.rules.filter((rule) => (rule.output != "")) || []).reduce((a, rule) => {
+      unsubscribes = (options.rules.filter((rule) => (rule.output != ""))).reduce((a, rule) => {
         log.N("enabling rule %s", rule.description, false);
 
-        var description = rule.description || "";
-        var value = null;
+        var description = rule.description || (rule.input + " => " + rule.output);
         var outputTermObject = new TermObject(rule.output);
-        var usePut = ((options.usePut.reduce((a,prefix) => (a || ((outputTermObject.path) && (outputTermObject.path.startsWith(prefix)))), false)) || (rule.usePut === true));
+        var usePut = ((options.usePut.reduce((a,prefix) => (a || ((outputTermObject.path) && (outputTermObject.path.startsWith(prefix)))), false)) || ((rule.usePut) && (rule.usePut === true)));
         
         var inputStream = expressionParser.parseExpression(rule.input);
         var outputStream = outputTermObject.getStream(app, bacon);
@@ -146,6 +145,7 @@ module.exports = function(app) {
             if ((iv == 0) && (ov != 0)) return(0);
             return(-1);
           }).onValue(action => {
+            var value = undefined;
             switch (action) {
               case 0: // Switch output off.
                 log.N("switching %s OFF", rule.description);
@@ -171,6 +171,7 @@ module.exports = function(app) {
                     log.E("internal error - bad output type (%s) on rule %s", outputTermObject.type.getName(), description);
                     break;
                 }
+                if (value !== undefined) performAction(outputTermObject.path, value, usePut);
                 break;
               case 1: // Switch output on. 
                 log.N("switching %s ON", rule.description);
@@ -192,21 +193,12 @@ module.exports = function(app) {
                     log.E("internal error - bad output type (%s) on rule %s", outputTermObject.type.getName(), description);
                     break;
                 }
+                if (value !== undefined) performAction(outputTermObject.path, value, usePut);
+                break;
               default:
                 break; 
             }
-            if ((outputTermObject.path) && (value)) {
-              if (!usePut) {
-                app.debug("issuing delta update (%s <= %s)", outputTermObject.path, (value)?value:"cancel");
-                delta.addValue(outputTermObject.path, value).commit().clear();
-              } else {
-                app.debug("issuing put request (%s <= %s)", outputTermObject.path, value);
-                app.putSelfPath(outputTermObject.path, value, (d) => app.debug("put response: %s", d.message));
-              }
-            } else {
-              log.E("problem parsing output path (%o)", rule);
-            }
-          }))
+          }));
         } else {
           log.W("ignoring badly formed rule (%s)", rule.description);
         }
@@ -220,6 +212,16 @@ module.exports = function(app) {
   plugin.stop = function() {
 	  unsubscribes.forEach(f => f());
 	  unsubscribes = [];
+  }
+
+  function performAction(path, value, usePut) {
+    if (!usePut) {
+      app.debug("issuing delta update (%s <= %s)", path, value);
+      delta.clear().addValue(path, value).commit();
+    } else {
+      app.debug("issuing put request (%s <= %s)", path, value);
+      app.putSelfPath(path, value, (d) => app.debug("put response: %s", d.message));
+    }
   }
 
   return(plugin);
