@@ -220,7 +220,7 @@ module.exports = function(app) {
       delta.clear().addValue(path, value).commit();
     } else {
       app.debug("issuing put request (%s <= %s)", path, value);
-      app.putSelfPath(path, value, (d) => app.debug("put response: %s", d.message));
+      app.putSelfPath(path, value, (d) => app.debug("put response: %s", JSON.stringify(d)));
     }
   }
 
