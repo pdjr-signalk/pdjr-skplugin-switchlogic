@@ -59,13 +59,11 @@ const PLUGIN_SCHEMA = {
       }
     }
   },
-  "required": [ "usePut", "rules" ],
-  "default": {
-    "usePut": [ "electrical.switches." ],
-    "rules": []
-  }
+  "required": [ "rules" ]
 };
 const PLUGIN_UISCHEMA = {};
+
+const OPTIONS_USEPUT_DEFAULT = [ "electrical.switches." ];
 
 module.exports = function(app) {  
 
@@ -118,94 +116,97 @@ module.exports = function(app) {
   }, app);
 
   plugin.start = function(options) {
-    if (!options) {
-      options = plugin.schema.default;
-      log.N("using default configuration", false);
-    }
-
-    if ((options.rules) && (Array.isArray(options.rules)) && (options.rules.length > 0)) {
+    if (Object.keys(options).length > 0) {
+      if ((options.rules) && (Array.isArray(options.rules)) && (options.rules.length > 0)) {
+        if (Array.isArray((options.usePut)?options.usePut:(options.usePut = OPTIONS_USEPUT_DEFAULT))) {        
       
-      log.N("started: operating %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"), true);
+          log.N("operating %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"), true);
 
-      unsubscribes = (options.rules.filter((rule) => (rule.output != ""))).reduce((a, rule) => {
-        log.N("enabling rule %s", rule.description, false);
+          unsubscribes = (options.rules.filter((rule) => (rule.output != ""))).reduce((a, rule) => {
+            app.debug("enabling rule %s", rule.description);
 
-        var description = rule.description || (rule.input + " => " + rule.output);
-        var outputTermObject = new TermObject(rule.output);
-        var usePut = ((options.usePut.reduce((a,prefix) => (a || ((outputTermObject.path) && (outputTermObject.path.startsWith(prefix)))), false)) || ((rule.usePut) && (rule.usePut === true)));
+            var description = rule.description || (rule.input + " => " + rule.output);
+            var outputTermObject = new TermObject(rule.output);
+            var usePut = ((options.usePut.reduce((a,prefix) => (a || ((outputTermObject.path) && (outputTermObject.path.startsWith(prefix)))), false)) || ((rule.usePut) && (rule.usePut === true)));
         
-        var inputStream = expressionParser.parseExpression(rule.input);
-        var outputStream = outputTermObject.getStream(app, bacon);
+            var inputStream = expressionParser.parseExpression(rule.input);
+            var outputStream = outputTermObject.getStream(app, bacon);
         
-        app.debug("input stream = %s, output stream = %s", inputStream, outputStream);
+            app.debug("input stream = %s, output stream = %s", inputStream, outputStream);
  
-        if ((inputStream) && (outputStream)) {
-          a.push(inputStream.combine(outputStream, function(iv, ov) { 
-            if ((iv == 1) && (ov == 0)) return(1);
-            if ((iv == 0) && (ov != 0)) return(0);
-            return(-1);
-          }).onValue(action => {
-            var value = undefined;
-            switch (action) {
-              case 0: // Switch output off.
-                log.N("switching %s OFF", rule.description);
-                switch (outputTermObject.type.getName()) {
-                  case "switch":
-                    value = 0;
-                    break;
-                  case "notification":
-                    if (outputTermObject.offstate) {
-                      value = {
-                        message: (outputTermObject.message)?(outputTermObject.message + " (OFF)"):"OFF state",
-                        state: (outputTermObject.offstate)?outputTermObject.offstate:"normal",
-                        method: (outputTermObject.method)?outputTermObject.method:[]
-                      };
-                    } else {
-                      value = null;
+            if ((inputStream) && (outputStream)) {
+              a.push(inputStream.combine(outputStream, function(iv, ov) { 
+                if ((iv == 1) && (ov == 0)) return(1);
+                if ((iv == 0) && (ov != 0)) return(0);
+                return(-1);
+              }).onValue(action => {
+                var value = undefined;
+                switch (action) {
+                  case 0: // Switch output off.
+                    log.N("switching %s OFF", rule.description);
+                    switch (outputTermObject.type.getName()) {
+                      case "switch":
+                        value = 0;
+                        break;
+                      case "notification":
+                        if (outputTermObject.offstate) {
+                          value = {
+                            message: (outputTermObject.message)?(outputTermObject.message + " (OFF)"):"OFF state",
+                            state: (outputTermObject.offstate)?outputTermObject.offstate:"normal",
+                            method: (outputTermObject.method)?outputTermObject.method:[]
+                          };
+                        } else {
+                          value = null;
+                        }
+                        break;
+                      case "path":
+                        value = (outputTermObject.offvalue)?outputTermObject.offvalue:0;
+                        break;
+                      default:
+                        log.E("internal error - bad output type (%s) on rule %s", outputTermObject.type.getName(), description);
+                        break;
                     }
+                    if (value !== undefined) performAction(outputTermObject.path, value, usePut);
                     break;
-                  case "path":
-                    value = (outputTermObject.offvalue)?outputTermObject.offvalue:0;
-                    break;
-                  default:
-                    log.E("internal error - bad output type (%s) on rule %s", outputTermObject.type.getName(), description);
-                    break;
-                }
-                if (value !== undefined) performAction(outputTermObject.path, value, usePut);
-                break;
-              case 1: // Switch output on. 
-                log.N("switching %s ON", rule.description);
-                switch (outputTermObject.type.getName()) {
-                  case "switch":
-                    value = 1;
-                    break;
-                  case "notification":
-                    value = {
-                      message: (outputTermObject.message)?(outputTermObject.message + " (ON)"):"ON state",
-                      state: (outputTermObject.onstate)?outputTermObject.onstate:"normal",
-                      method: (outputTermObject.method)?outputTermObject.method:[]
-                    };
-                    break;
-                  case "path":
-                    value = (outputTermObject.offvalue)?outputTermObject.offvalue:1;
+                  case 1: // Switch output on. 
+                    log.N("switching %s ON", rule.description);
+                    switch (outputTermObject.type.getName()) {
+                      case "switch":
+                        value = 1;
+                        break;
+                      case "notification":
+                        value = {
+                          message: (outputTermObject.message)?(outputTermObject.message + " (ON)"):"ON state",
+                          state: (outputTermObject.onstate)?outputTermObject.onstate:"normal",
+                          method: (outputTermObject.method)?outputTermObject.method:[]
+                        };
+                        break;
+                      case "path":
+                        value = (outputTermObject.offvalue)?outputTermObject.offvalue:1;
+                        break;
+                      default:
+                        log.E("internal error - bad output type (%s) on rule %s", outputTermObject.type.getName(), description);
+                        break;
+                    }
+                    if (value !== undefined) performAction(outputTermObject.path, value, usePut);
                     break;
                   default:
-                    log.E("internal error - bad output type (%s) on rule %s", outputTermObject.type.getName(), description);
-                    break;
+                    break; 
                 }
-                if (value !== undefined) performAction(outputTermObject.path, value, usePut);
-                break;
-              default:
-                break; 
+              }));
+            } else {
+              log.W("ignoring badly formed rule (%s)", rule.description);
             }
-          }));
+            return(a);
+          }, []);
         } else {
-          log.W("ignoring badly formed rule (%s)", rule.description);
+          log.E("configuration 'usePut' property must be an array");
         }
-        return(a);
-      }, []);
+      } else {
+        log.E("configuration 'rules' property is missing or empty");
+      }
     } else {
-      log.N("stopped: no rules are defined");
+      log.N("plugin configuration file is missing or unusable");
     }
   }
 

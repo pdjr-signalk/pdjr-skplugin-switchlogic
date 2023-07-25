@@ -76,16 +76,23 @@ implements a put handler for operating NMEA 2000 relay output switchbanks.
 
 ## Configuration
 
-The configuration consists of a collection of *rule definitions* each
-of which specifies an input condition that determines an output state.
+The plugin configuration has the following properties.
 
-__Rule definitions__ [rules]\
-This array property can contain an arbitrary number of *rule
-definitions* each of which is characterised by the following 
-properties.
+| Property | Default                    | Description |
+| :------- | :------------------------- | :---------- |
+| usePut   | [ "electrical.switches." ] | Optional array containing the prefixes of paths on which a PUT (rather than a delta update) should be used to perform updates. |
+| rules    | (none)                     | Required array of *rule* objects. |
 
-__Input expression__ [input]\
-This required string property introduces a boolean *input expression*.
+Each *rule* object has the following properties.
+
+| Property    | Default | Description |
+| :---------- | :------ | :---------- |
+| input       | (none)  | Required string specifying a boolean expression. |
+| output      | (none)  | Required string specifying the Signal K path that should be updated by this rule. |
+| description | ''      | Optional string describing this rule. |
+| usePut      | false   | Optional boolean saying whether or not to use PUT for updatint this rules *output*. |
+
+### Input expressions
 
 Operands in input expression refer to paths in the Signal K tree and values
 appearing on these paths become the boolean values over which the expression
@@ -94,17 +101,18 @@ In the plugin boolean values are represented as 0 (false) and 1 (true) which
 allows Signal K switch state values to be used directly in an expression, but
 other path values must be mapped to 0 and 1 using a comparison test.
 
-There are a few notational forms that can be used to specify a variable operand.
+Operators 'and', 'or' and 'not' can be used to build arbitrarily complex
+conditions and parentheses can be used for disambiguation.
 
-'and', 'or' and 'not' operators can be used to build arbitrarily complex
-conditions.
-```
-1. 'electrical.switches.bank.0.1.state'\
-2. '[0,1]'\
-3. '[0,1] and (not [1,2])'\
-4. 'electrical.venus.acSource:battery'\
-5. 'tanks.wasteWater.0.currentLevel:gt:0.7 and [0,6]'
-```
+The following example input expressions give a flavour of what is possible.
+
+| Input expression | Description |
+| :--- | :--- |
+| 'electrical.switches.bank.0.1.state'              | True when the specified switch state is on, otherwise false. |
+| '[0,1]'                                           | Notional short form equivalent to the above example. |
+| '[0,1] and (not [1,2])'                           | A complex expression involving two switch states. |
+| 'electrical.venus.acSource:battery'               | True when the value of 'electrical.venus.acSource' is equal to 'battery'. |
+|'tanks.wasteWater.0.currentLevel:gt:0.7 and [0,6]' | True when the specified switch is on and the value of 'tanks.wasteWater.0.currentLevel is greater than 0.7. |
 
 There is a full explanation of input expression syntax below.
 
