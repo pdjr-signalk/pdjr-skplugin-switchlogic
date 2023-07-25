@@ -92,19 +92,18 @@ Each *rule* object has the following properties.
 | description | ''      | Optional string describing this rule. |
 | usePut      | false   | Optional boolean saying whether or not to use PUT for updatint this rules *output*. |
 
-### Input expressions
+*input* boolean expression contains operands which refer to paths in
+the Signal K tree: values appearing on these paths become the boolean
+values over which the expression is applied.
+Signal K switch state values are natively boolean and can be used
+directly in an expression, but other path values must be mapped to 0
+and 1 using a comparison test.
 
-Operands in input expression refer to paths in the Signal K tree and values
-appearing on these paths become the boolean values over which the expression
-is applied.
-In the plugin boolean values are represented as 0 (false) and 1 (true) which
-allows Signal K switch state values to be used directly in an expression, but
-other path values must be mapped to 0 and 1 using a comparison test.
+The operators 'and', 'or' and 'not' can be used to build arbitrarily
+complex conditions and parentheses can be used for disambiguation.
 
-Operators 'and', 'or' and 'not' can be used to build arbitrarily complex
-conditions and parentheses can be used for disambiguation.
-
-The following example input expressions give a flavour of what is possible.
+The following example *input* expressions give a flavour of what is
+possible.
 
 | Input expression | Description |
 | :--- | :--- |
@@ -116,15 +115,19 @@ The following example input expressions give a flavour of what is possible.
 
 There is a full explanation of input expression syntax below.
 
-__Output path__ [output]\
-This required string property specifies the Signal K path that should be updated
-dependent upon the value of *input expression* and also the values that should be
-used in the update.
+*output* specifies the Signal K path that should be updated dependent
+upon the value of the *input* expression.
+Values that should be used in the updatecan also be supplied.
+
 There are a few alternative notations.
 
-1. __[__[*b*__,__]*c*__]__ (shorthand for a path in 'electrical.switches...')
+| switch | __[__[*b*__,__]*c*__]__ | shorthand for a path in the 'electrical.switches...' tree. |
+| notification | *notification-path*[__:__*state*[__:__*method*[__:__*description*]]] | a path in the notification tree. |
+| path | *path*[__:__*true-value*__,__*false-value__] | an arbitrary path somewhere in the Signal K tree. |
 
-   If *b* is not specified, then use a put to request update of 'electrical.switches.*c*.state'
+*b* is a switchbank name or instance number and *c* is a channel index.
+
+not specified, then use a put to request update of 'electrical.switches.*c*.state'
    with the value of the containing rule's *input expression* (either 0 or 1)
    
    If *b* is specified, then use a put to request update of 'electrical.switches.*b*.*c*.state'
