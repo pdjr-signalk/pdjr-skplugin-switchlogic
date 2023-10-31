@@ -67,43 +67,6 @@ const PLUGIN_SCHEMA = {
 };
 const PLUGIN_UISCHEMA = {};
 
-const BOOLEAN_PARSER = {
-  "operand": {
-    "arity": 1,
-    "precedence": 0,
-    "parser": function(t) {
-      return((new TermObject(t)).getStream(app, bacon));
-    }
-  },
-  "not": {
-    "arity": 1,
-    "precedence": 3,
-    "parser": function(s) {
-      return(s.not());
-    }
-  },
-  "and": {
-    "arity": 2,
-    "precedence": 2,
-    "parser": function(s1,s2) {
-      return(s1.combine(s2, (a,b) => {
-        app.debug("and-ing %d and %d", a, b);
-        return(a && b);
-      }));
-    }
-  },
-  "or": {
-    "arity": 2,
-    "precedence": 1,
-    "parser": function(s1,s2) {
-      return(s1.combine(s2, (a,b) => {
-        app.debug("or-ing %d and %d", a, b);
-        return(a || b);
-      }));
-    }
-  }
-};
-
 module.exports = function(app) {  
 
   var plugin = {};
@@ -117,7 +80,42 @@ module.exports = function(app) {
   plugin.App = new MyApp(app);
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
-  const expressionParser = new ExpressionParser(BOOLEAN_PARSER, app);
+  const expressionParser = new ExpressionParser({
+    "operand": {
+      "arity": 1,
+      "precedence": 0,
+      "parser": function(t) {
+        return((new TermObject(t)).getStream(app, bacon));
+      }
+    },
+    "not": {
+      "arity": 1,
+      "precedence": 3,
+      "parser": function(s) {
+        return(s.not());
+      }
+    },
+    "and": {
+      "arity": 2,
+      "precedence": 2,
+      "parser": function(s1,s2) {
+        return(s1.combine(s2, (a,b) => {
+          app.debug("and-ing %d and %d", a, b);
+          return(a && b);
+        }));
+      }
+    },
+    "or": {
+      "arity": 2,
+      "precedence": 1,
+      "parser": function(s1,s2) {
+        return(s1.combine(s2, (a,b) => {
+          app.debug("or-ing %d and %d", a, b);
+          return(a || b);
+        }));
+      }
+    }
+  }, app);
 
   plugin.start = function(options) {
     plugin.options = {}
