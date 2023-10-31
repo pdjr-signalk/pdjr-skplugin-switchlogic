@@ -123,7 +123,7 @@ module.exports = function(app) {
     plugin.options = {}
     plugin.options.usePut = (options.usePut)?options.usePut:plugin.schema.properties.usePut.default;
     plugin.options.rules = (options.rules)?options.rules:plugin.schema.properties.rules.default;
-    app.degug(`Using configuration: ${JSON.stringify(plugin.options, null, 2)}`);
+    app.debug(`Using configuration: ${JSON.stringify(plugin.options, null, 2)}`);
 
     if ((plugin.options.rules) && (Array.isArray(plugin.options.rules)) && (plugin.options.rules.length > 0)) {      
       
