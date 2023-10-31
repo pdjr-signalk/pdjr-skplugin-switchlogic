@@ -118,7 +118,6 @@ module.exports = function(app) {
   plugin.App = new MyApp(app);
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
-  const delta = new Delta(app, plugin.id);
   const expressionParser = new ExpressionParser(BOOLEAN_PARSER, app);
 
   plugin.start = function(options) {
