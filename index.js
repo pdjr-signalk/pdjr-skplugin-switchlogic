@@ -15,14 +15,15 @@
  */
 
 const bacon = require('baconjs');
-const Log = require("./lib/signalk-liblog/Log.js");
-const Delta = require("./lib/signalk-libdelta/Delta.js");
-const ExpressionParser = require("./lib/expression-parser/ExpressionParser.js");
-const TermObject = require("./lib/term-object/TermObject.js");
+const MyApp = require('./lib/signalk-libapp/App.js');
+const Log = require('./lib/signalk-liblog/Log.js');
+const Delta = require('./lib/signalk-libdelta/Delta.js');
+const ExpressionParser = require('./lib/expression-parser/ExpressionParser.js');
+const TermObject = require('./lib/term-object/TermObject.js');
 
-const PLUGIN_ID = "switchlogic";
-const PLUGIN_NAME = "pdjr-skplugin-switchlogic";
-const PLUGIN_DESCRIPTION = "Apply binary logic over Signal K path values";
+const PLUGIN_ID = 'switchlogic';
+const PLUGIN_NAME = 'pdjr-skplugin-switchlogic';
+const PLUGIN_DESCRIPTION = 'Apply binary logic over Signal K path values';
 const PLUGIN_SCHEMA = {
   "type": "object",
   "properties": {
@@ -30,7 +31,10 @@ const PLUGIN_SCHEMA = {
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "default": [
+        "electrical.switches."
+      ]
     },
     "rules": {
       "title": "Rule definitions",
@@ -56,14 +60,50 @@ const PLUGIN_SCHEMA = {
           }
         },
         "required": [ "input", "output" ]
-      }
+      },
+      "default": [ ]
     }
   },
   "required": [ "rules" ]
 };
 const PLUGIN_UISCHEMA = {};
 
-const OPTIONS_USEPUT_DEFAULT = [ "electrical.switches." ];
+const BOOLEAN_PARSER = {
+  "operand": {
+    "arity": 1,
+    "precedence": 0,
+    "parser": function(t) {
+      return((new TermObject(t)).getStream(app, bacon));
+    }
+  },
+  "not": {
+    "arity": 1,
+    "precedence": 3,
+    "parser": function(s) {
+      return(s.not());
+    }
+  },
+  "and": {
+    "arity": 2,
+    "precedence": 2,
+    "parser": function(s1,s2) {
+      return(s1.combine(s2, (a,b) => {
+        app.debug("and-ing %d and %d", a, b);
+        return(a && b);
+      }));
+    }
+  },
+  "or": {
+    "arity": 2,
+    "precedence": 1,
+    "parser": function(s1,s2) {
+      return(s1.combine(s2, (a,b) => {
+        app.debug("or-ing %d and %d", a, b);
+        return(a || b);
+      }));
+    }
+  }
+};
 
 module.exports = function(app) {  
 
@@ -75,138 +115,101 @@ module.exports = function(app) {
   plugin.description = PLUGIN_DESCRIPTION;
   plugin.schema = PLUGIN_SCHEMA;
   plugin.uiSchema = PLUGIN_UISCHEMA;
+  plugin.App = new MyApp(app);
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   const delta = new Delta(app, plugin.id);
-  const expressionParser = new ExpressionParser({
-    "operand": {
-      "arity": 1,
-      "precedence": 0,
-      "parser": function(t) {
-        return((new TermObject(t)).getStream(app, bacon));
-      }
-    },
-    "not": {
-      "arity": 1,
-      "precedence": 3,
-      "parser": function(s) {
-        return(s.not());
-      }
-    },
-    "and": {
-      "arity": 2,
-      "precedence": 2,
-      "parser": function(s1,s2) {
-        return(s1.combine(s2, (a,b) => {
-          app.debug("and-ing %d and %d", a, b);
-          return(a && b);
-        }));
-      }
-    },
-    "or": {
-      "arity": 2,
-      "precedence": 1,
-      "parser": function(s1,s2) {
-        return(s1.combine(s2, (a,b) => {
-          app.debug("or-ing %d and %d", a, b);
-          return(a || b);
-        }));
-      }
-    }
-  }, app);
+  const expressionParser = new ExpressionParser(BOOLEAN_PARSER, app);
 
   plugin.start = function(options) {
-    if (Object.keys(options).length > 0) {
-      if ((options.rules) && (Array.isArray(options.rules)) && (options.rules.length > 0)) {
-        if (Array.isArray((options.usePut)?options.usePut:(options.usePut = OPTIONS_USEPUT_DEFAULT))) {        
+    plugin.options = {}
+    plugin.options.usePut = (options.usePut)?options.usePut:plugin.schema.properties.usePut.default;
+    plugin.options.rules = (options.rules)?options.rules:plugin.schema.properties.rules.default;
+    app.degug(`Using configuration: ${JSON.stringify(plugin.options, null, 2)}`);
+
+    if ((plugin.options.rules) && (Array.isArray(plugin.options.rules)) && (plugin.options.rules.length > 0)) {      
       
-          log.N("operating %d rule%s", options.rules.length, ((options.rules.length == 1)?"":"s"), true);
+      log.N(`operating ${plugin.options.rules.length} rule${((plugin.options.rules.length == 1)?'':'s')}`);
 
-          unsubscribes = (options.rules.filter((rule) => (rule.output != ""))).reduce((a, rule) => {
-            app.debug("enabling rule %s", rule.description);
+      unsubscribes = (options.rules.filter((rule) => (rule.output != ""))).reduce((a, rule) => {
+        app.debug(`enabling rule ${rule.description}`);
 
-            var description = rule.description || (rule.input + " => " + rule.output);
-            var outputTermObject = new TermObject(rule.output);
-            var usePut = ((options.usePut.reduce((a,prefix) => (a || ((outputTermObject.path) && (outputTermObject.path.startsWith(prefix)))), false)) || ((rule.usePut) && (rule.usePut === true)));
+        var description = rule.description || (rule.input + " => " + rule.output);
+        var outputTermObject = new TermObject(rule.output);
+        var usePut = ((options.usePut.reduce((a,prefix) => (a || ((outputTermObject.path) && (outputTermObject.path.startsWith(prefix)))), false)) || ((rule.usePut) && (rule.usePut === true)));
         
-            var inputStream = expressionParser.parseExpression(rule.input);
-            var outputStream = outputTermObject.getStream(app, bacon);
+        var inputStream = expressionParser.parseExpression(rule.input);
+        var outputStream = outputTermObject.getStream(app, bacon);
         
-            app.debug("input stream = %s, output stream = %s", inputStream, outputStream);
+        app.debug(`input stream = ${inputStream}, output stream = ${outputStream}`);
  
-            if ((inputStream) && (outputStream)) {
-              a.push(inputStream.combine(outputStream, function(iv, ov) { 
-                if ((iv == 1) && (ov == 0)) return(1);
-                if ((iv == 0) && (ov != 0)) return(0);
-                return(-1);
-              }).onValue(action => {
-                var value = undefined;
-                switch (action) {
-                  case 0: // Switch output off.
-                    log.N("switching %s OFF", rule.description);
-                    switch (outputTermObject.type.getName()) {
-                      case "switch":
-                        value = 0;
-                        break;
-                      case "notification":
-                        if (outputTermObject.offstate) {
-                          value = {
-                            message: (outputTermObject.message)?(outputTermObject.message + " (OFF)"):"OFF state",
-                            state: (outputTermObject.offstate)?outputTermObject.offstate:"normal",
-                            method: (outputTermObject.method)?outputTermObject.method:[]
-                          };
-                        } else {
-                          value = null;
-                        }
-                        break;
-                      case "path":
-                        value = (outputTermObject.offvalue)?outputTermObject.offvalue:0;
-                        break;
-                      default:
-                        log.E("internal error - bad output type (%s) on rule %s", outputTermObject.type.getName(), description);
-                        break;
-                    }
-                    if (value !== undefined) performAction(outputTermObject.path, value, usePut);
+        if ((inputStream) && (outputStream)) {
+          a.push(inputStream.combine(outputStream, function(iv, ov) { 
+            if ((iv == 1) && (ov == 0)) return(1);
+            if ((iv == 0) && (ov != 0)) return(0);
+            return(-1);
+          }).onValue(action => {
+            var value = undefined;
+            switch (action) {
+              case 0: // Switch output off.
+                log.N(`switching ${rule.description} OFF`);
+                switch (outputTermObject.type.getName()) {
+                  case "switch":
+                    value = 0;
                     break;
-                  case 1: // Switch output on. 
-                    log.N("switching %s ON", rule.description);
-                    switch (outputTermObject.type.getName()) {
-                      case "switch":
-                        value = 1;
-                        break;
-                      case "notification":
-                        value = {
-                          message: (outputTermObject.message)?(outputTermObject.message + " (ON)"):"ON state",
-                          state: (outputTermObject.onstate)?outputTermObject.onstate:"normal",
-                          method: (outputTermObject.method)?outputTermObject.method:[]
-                        };
-                        break;
-                      case "path":
-                        value = (outputTermObject.offvalue)?outputTermObject.offvalue:1;
-                        break;
-                      default:
-                        log.E("internal error - bad output type (%s) on rule %s", outputTermObject.type.getName(), description);
-                        break;
+                  case "notification":
+                    if (outputTermObject.offstate) {
+                      value = {
+                        message: (outputTermObject.message)?(outputTermObject.message + " (OFF)"):"OFF state",
+                        state: (outputTermObject.offstate)?outputTermObject.offstate:"normal",
+                        method: (outputTermObject.method)?outputTermObject.method:[]
+                      };
+                    } else {
+                      value = null;
                     }
-                    if (value !== undefined) performAction(outputTermObject.path, value, usePut);
+                    break;
+                  case "path":
+                    value = (outputTermObject.offvalue)?outputTermObject.offvalue:0;
                     break;
                   default:
-                    break; 
+                    log.E(`internal error - bad output type (${outputTermObject.type.getName()}) on rule ${description}`);
+                    break;
                 }
-              }));
-            } else {
-              log.W("ignoring badly formed rule (%s)", rule.description);
+                if (value !== undefined) performAction(outputTermObject.path, value, usePut);
+                break;
+              case 1: // Switch output on. 
+                log.N(`switching ${rule.description} ON`);
+                switch (outputTermObject.type.getName()) {
+                  case "switch":
+                    value = 1;
+                    break;
+                  case "notification":
+                    value = {
+                      message: (outputTermObject.message)?(outputTermObject.message + " (ON)"):"ON state",
+                      state: (outputTermObject.onstate)?outputTermObject.onstate:"normal",
+                      method: (outputTermObject.method)?outputTermObject.method:[]
+                    };
+                    break;
+                  case "path":
+                    value = (outputTermObject.offvalue)?outputTermObject.offvalue:1;
+                    break;
+                  default:
+                    log.E(`internal error - bad output type (${outputTermObject.type.getName()}) on rule ${description}`);
+                    break;
+                }
+                if (value !== undefined) performAction(outputTermObject.path, value, usePut);
+                break;
+              default:
+                break; 
             }
-            return(a);
-          }, []);
+          }));
         } else {
-          log.E("configuration 'usePut' property must be an array");
+          log.W(`ignoring badly formed rule (${rule.description})`);
         }
-      } else {
-        log.E("configuration 'rules' property is missing or empty");
-      }
+        return(a);
+      }, []);
     } else {
-      log.N("plugin configuration file is missing or unusable");
+      log.E("configuration 'rules' property is missing or empty");
     }
   }
 
@@ -217,11 +220,11 @@ module.exports = function(app) {
 
   function performAction(path, value, usePut) {
     if (!usePut) {
-      app.debug("issuing delta update (%s <= %s)", path, value);
-      delta.clear().addValue(path, value).commit();
+      app.debug(`issuing delta update (${path} <= ${value})`);
+      plugin.App.notify(path, value, plugin.id);
     } else {
-      app.debug("issuing put request (%s <= %s)", path, value);
-      app.putSelfPath(path, value, (d) => app.debug("put response: %s", JSON.stringify(d)));
+      app.debug(`issuing put request (${path} <= ${value})`);
+      app.putSelfPath(path, value, (d) => app.debug(`put response: ${JSON.stringify(d)}`));
     }
   }
 
