@@ -17,7 +17,6 @@
 const bacon = require('baconjs');
 const MyApp = require('./lib/signalk-libapp/App.js');
 const Log = require('./lib/signalk-liblog/Log.js');
-const Delta = require('./lib/signalk-libdelta/Delta.js');
 const ExpressionParser = require('./lib/expression-parser/ExpressionParser.js');
 const TermObject = require('./lib/term-object/TermObject.js');
 
