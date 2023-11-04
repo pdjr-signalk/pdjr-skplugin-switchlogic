@@ -25,7 +25,8 @@
   "dependencies": {
     "baconjs": "^1.0.1",
     "lodash": "^4.17.21",
-    "sprintf-js": "^1.1.2"
+    "signalk-libapp": "github:pdjr-signalk/signalk-libapp",
+    "signalk-liblog": "github:pdjr-signalk/signalk-liblog",
   },
   "directories": {
     "lib": "lib"
