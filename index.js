@@ -30,10 +30,7 @@ const PLUGIN_SCHEMA = {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "default": [
-        "electrical.switches."
-      ]
+      }
     },
     "rules": {
       "title": "Rule definitions",
@@ -58,12 +55,13 @@ const PLUGIN_SCHEMA = {
             "type": "boolean"
           }
         },
-        "required": [ "input", "output" ]
-      },
-      "default": [ ]
+        "required": [ "input", "output" ],
+        "default": { "description": "Not configured" }
+      }
     }
   },
-  "required": [ "rules" ]
+  "required": [ "rules" ],
+  "default": { "usePut": [ "electrical.switches." ], "rules": [] }
 };
 const PLUGIN_UISCHEMA = {};
 
@@ -118,9 +116,18 @@ module.exports = function(app) {
   }, app);
 
   plugin.start = function(options) {
-    plugin.options = {}
-    plugin.options.usePut = (options.usePut)?options.usePut:plugin.schema.properties.usePut.default;
-    plugin.options.rules = (options.rules)?options.rules:plugin.schema.properties.rules.default;
+    plugin.options = { ...plugin.schema.properties.default, ...options };
+    plugin.options.rules = options.rules.reduce((a,rule) => {
+      try {
+        var validRule = { ...plugin.schema.properties.rules.items.default, ...rule }
+        if (!validRule.input) throw new Error("missing 'input' property");
+        if (!validRule.output) throw new Error("missing 'output' property");
+        validRule.usePut = (validRule.usePut)?validRule.usePut:plugin.options.usePut;
+        a.push(validRule);
+      } catch(e) { log.W(`dropping rule (${e.message})`); }
+      return(a);
+    }, []);
+
     app.debug(`Using configuration: ${JSON.stringify(plugin.options, null, 2)}`);
 
     if ((plugin.options.rules) && (Array.isArray(plugin.options.rules)) && (plugin.options.rules.length > 0)) {      
