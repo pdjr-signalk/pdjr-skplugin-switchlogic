@@ -49,10 +49,6 @@ const PLUGIN_SCHEMA = {
           "description": {
             "title": "Description",
             "type": "string"
-          },
-          "usePut": {
-            "title": "Update output via a put request rather than a delta",
-            "type": "boolean"
           }
         },
         "required": [ "input", "output" ],
@@ -122,7 +118,6 @@ module.exports = function(app) {
         var validRule = { ...plugin.schema.properties.rules.items.default, ...rule }
         if (!validRule.input) throw new Error("missing 'input' property");
         if (!validRule.output) throw new Error("missing 'output' property");
-        validRule.usePut = (validRule.usePut)?validRule.usePut:plugin.options.usePut;
         a.push(validRule);
       } catch(e) { log.W(`dropping rule (${e.message})`); }
       return(a);
