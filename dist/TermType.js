@@ -1,3 +1,4 @@
+"use strict";
 /**********************************************************************
  * Copyright 2020 Paul Reeve <preeve@pdjr.eu>
  *
@@ -13,25 +14,24 @@
  * implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TermType = void 0;
 /**
  * Class representing the type of a TermObject. In a proper programming
  * language this would be an enum.
  */
-module.exports = class TermType {
-
-  static on = new TermType('on');
-  static off = new TermType('off');
-  static notification = new TermType('notification');
-  static switch = new TermType('switch');
-  static path = new TermType('path');
-
-  constructor(name) {
-    this.name = name;
-  }
-
-  getName() {
-    return(this.name);
-  }
-
+class TermType {
+    constructor(name) {
+        this.name = name;
+    }
+    getName() {
+        return (this.name);
+    }
 }
+exports.TermType = TermType;
+TermType.on = new TermType('on');
+TermType.off = new TermType('off');
+TermType.notification = new TermType('notification');
+TermType.switch = new TermType('switch');
+TermType.path = new TermType('path');
+TermType.undefined = new TermType('undefined');

@@ -2,10 +2,15 @@
   "name": "pdjr-skplugin-switchlogic",
   "version": "2.1.0",
   "description": "Apply binary logic over Signal K switch and notification states.",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "signalk-plugin-enabled-by-default": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\""
+    "publish": "yq -o=json -I=2 resources/openApi.yaml > resources/openApi.json",
+    "test": "echo \"Error: no test specified\"",
+    "build": "tsc",
+    "prepare": "tsc",
+    "pack": "npm pack"
   },
   "repository": {
     "type": "git",
@@ -23,12 +28,9 @@
   },
   "homepage": "https://github.com/pdjr-signalk/pdjr-skplugin-switchlogic#readme",
   "dependencies": {
-    "baconjs": "^1.0.1",
-    "lodash": "^4.17.21",
-    "signalk-libapp": "github:pdjr-signalk/signalk-libapp",
-    "signalk-liblog": "github:pdjr-signalk/signalk-liblog"
+    "baconjs": "^3.0.19"
   },
-  "directories": {
-    "lib": "lib"
+  "devDependencies": {
+    "@types/node": "^22.5.4"
   }
 }
