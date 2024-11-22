@@ -3,21 +3,24 @@
  * expression whose terminal terms are BaconJS event streams into as
  * stream filter which applies the expressin logic to incoming events.
  */
-module.exports = class ExpressionParser {
+export class ExpressionParser {
 
+  parsers: any = undefined;
+  tokens: any = undefined;
+  index: number = 0;
+  app: any = undefined;
+   
   /******************************************************************
    * Create a new ExpressionParser which will apply the termParser
    * function to translate a terminal symbol into its equivalent
    * BaconJS EventStream.
    */
-  constructor(parsers, app) {
+  constructor(parsers: any, app: any) {
     this.parsers = parsers;
-    this.tokens = null;
-    this.index = 0;
     this.app = app;
   }    
 
-  parseExpression(expression) {
+  parseExpression(expression: any): any {
     return(this.parsePrefixExpression(this.infixToPrefix(expression)));
   }
 
@@ -26,9 +29,9 @@ module.exports = class ExpressionParser {
    * will apply the specified logical processing to values derived
    * from its input EventStreams.
    */
-  parsePrefixExpression(expression) {
-    var tokens = null;
-    var stack = [];
+  parsePrefixExpression(expression: string): any {
+    var tokens: string[] = [];
+    var stack: any[] = [];
 
     this.app.debug("ExpressionParser: parsePrefixExpression: %s", expression);
 
@@ -65,11 +68,11 @@ module.exports = class ExpressionParser {
    * Process <infixExpression> returning an equivalent prefix form or
    * null if <infixExpression> is badly formed.
    */
-  infixToPrefix(infixExpression) {
-    var infixTokens = infixExpression.replace(/\(/g, ' ( ').replace(/\)/g, ' ) ').trim().split(/\s+/);
-    var prefixTokens = [];
-    var stack = [];
-    var t;
+  infixToPrefix(infixExpression: string): string {
+    var infixTokens: string[] = infixExpression.replace(/\(/g, ' ( ').replace(/\)/g, ' ) ').trim().split(/\s+/);
+    var prefixTokens: string[] = [];
+    var stack: string[] = [];
+    var t: string | undefined;
 
     this.app.debug("ExpressionParser: infixToPrefix: %s", infixExpression);
     
@@ -87,7 +90,8 @@ module.exports = class ExpressionParser {
         default:
           if (this.precedence(token) > 0) { // we have an operator
             while ((stack.length > 0) && (stack[stack.length - 1] != "(") && (this.precedence(stack[stack.length - 1]) > this.precedence(token))) {
-              prefixTokens.push(stack.pop());
+              t = stack.pop();
+              if (t) prefixTokens.push(t);
             }
             stack.push(token);
           } else { // we have an operand
@@ -96,11 +100,11 @@ module.exports = class ExpressionParser {
           break;
       }
     });
-    while (stack.length > 0) prefixTokens.push(stack.pop());
+    while (stack.length > 0) { t = stack.pop(); if (t) prefixTokens.push(t); }
     return(prefixTokens.reverse().join(' '));
   }
 
-  precedence(token) {
+  precedence(token: string): number {
     return((this.parsers.hasOwnProperty(token))?this.parsers[token].precedence:0);
   }      
 
